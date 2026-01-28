@@ -1,0 +1,25 @@
+{
+  "name": "webman/validation",
+  "type": "library",
+  "license": "MIT",
+  "description": "Webman plugin webman/validation",
+  "require": {
+    "illuminate/validation": "*",
+    "illuminate/translation": "*",
+    "workerman/webman-framework": "^2.1"
+  },
+  "autoload": {
+    "psr-4": {
+      "Webman\\Validation\\": "src",
+      "support\\validation\\": "src/support/validation"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "Webman\\Validation\\Tests\\": "src/Tests"
+    }
+  },
+  "require-dev": {
+    "phpunit/phpunit": "*"
+  }
+}
