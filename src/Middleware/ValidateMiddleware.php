@@ -80,16 +80,21 @@ final class ValidateMiddleware
             $value = $parameter->getDefaultValue();
         }
 
-        $rules = $config->rules;
-        if (!$rules) {
+        $rules = trim($config->rules);
+        if ($rules === '') {
             return;
+        }
+
+        $attributes = [];
+        if ($config->attribute !== '') {
+            $attributes = [$name => $config->attribute];
         }
 
         Validator::make(
             [$name => $value],
             [$name => $rules],
             $config->messages,
-            $config->attributes
+            $attributes
         )->validate();
     }
 

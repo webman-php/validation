@@ -223,7 +223,7 @@ final class ParamController
 {
     public function send(
         #[Param(
-            rules: ['required', 'integer'],
+            rules: 'required|integer',
             messages: ['id.integer' => 'Id must be integer']
         )]
         int $id
@@ -235,9 +235,9 @@ final class ParamMessageController
 {
     public function send(
         #[Param(
-            rules: ['required', 'email'],
+            rules: 'required|email',
             messages: ['email.email' => 'The :attribute is invalid'],
-            attributes: ['email' => 'Email Address']
+            attribute: 'Email Address'
         )]
         string $email
     ): void {
@@ -249,9 +249,9 @@ final class MixedController
     #[Validate(rules: ['token' => 'required|string'])]
     public function send(
         Request $request,
-        #[Param(rules: ['required', 'email'])]
+        #[Param(rules: 'required|email')]
         string $from,
-        #[Param(rules: ['required', 'integer'])]
+        #[Param(rules: 'required|integer')]
         int $id
     ): void {
     }
