@@ -1,26 +1,25 @@
-[English](README.md) | 中文
+English | [中文](./README.zh-CN.md)
 
 # Webman Validation
 
-Webman 的验证组件，基于 `illuminate/validation`，提供手动验证、注解验证、参数级验证，以及可复用的规则集。
+Webman's validation component, based on `illuminate/validation`, provides manual validation, annotation-based validation, parameter-level validation, and reusable rule sets.
 
-## 安装
+## Installation
 
 ```bash
 composer require webman/validation
 ```
 
+## Basic Concepts
 
-## 基本概念
+- **Rule Set Reuse**: Provides `rules`, `messages`, and `attributes` through `ValidationSetInterface`, which can be reused in manual and annotation validation.
+- **Method-Level Validation**: Use `#[Validate]` to bind to controller methods.
+- **Parameter-Level Validation**: Use `#[Param]` to bind to controller method parameters.
+- **Exception Handling**: Throws `support\validation\ValidationException` on validation failure.
 
-- **规则集复用**：通过 `ValidationSetInterface` 提供 `rules` `messages` `attributes`，可在手动与注解中复用。
-- **方法级验证**：使用 `#[Validate]` 绑定控制器方法。
-- **参数级验证**：使用 `#[Param]` 绑定控制器方法参数。
-- **异常处理**：验证失败抛出 `support\validation\ValidationException`
+## Manual Validation
 
-## 手动验证
-
-### 基本用法
+### Basic Usage
 
 ```php
 use support\validation\Validator;
@@ -32,7 +31,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-### 自定义 messages 与 attributes
+### Custom Messages and Attributes
 
 ```php
 use support\validation\Validator;
@@ -40,12 +39,12 @@ use support\validation\Validator;
 Validator::make(
     $data,
     ['contact' => 'required|email'],
-    ['contact.email' => '邮箱格式不正确'],
-    ['contact' => '邮箱']
+    ['contact.email' => 'Invalid email format'],
+    ['contact' => 'Email']
 )->validate();
 ```
 
-## 规则集复用（ValidationSetInterface）
+## Rule Set Reuse (ValidationSetInterface)
 
 ```php
 namespace app\validation;
@@ -75,23 +74,23 @@ class UserRules implements ValidationSetInterface
     public static function messages(string $scene = 'default'): array
     {
         return [
-            'name.required' => '姓名必填',
-            'email.required' => '邮箱必填',
-            'email.email' => '邮箱格式不正确',
+            'name.required' => 'Name is required',
+            'email.required' => 'Email is required',
+            'email.email' => 'Invalid email format',
         ];
     }
 
     public static function attributes(string $scene = 'default'): array
     {
         return [
-            'name' => '姓名',
-            'email' => '邮箱',
+            'name' => 'Name',
+            'email' => 'Email',
         ];
     }
 }
 ```
 
-### 手动验证复用
+### Manual Validation Reuse
 
 ```php
 use support\validation\Validator;
@@ -105,9 +104,9 @@ Validator::make(
 )->validate();
 ```
 
-## 注解验证（方法级）
+## Annotation Validation (Method-Level)
 
-### 直接规则
+### Direct Rules
 
 ```php
 use support\Request;
@@ -121,12 +120,12 @@ class AuthController
             'password' => 'required|string|min:6',
         ],
         messages: [
-            'email.required' => '邮箱必填',
-            'password.required' => '密码必填',
+            'email.required' => 'Email is required',
+            'password.required' => 'Password is required',
         ],
         attributes: [
-            'email' => '邮箱',
-            'password' => '密码',
+            'email' => 'Email',
+            'password' => 'Password',
         ]
     )]
     public function login(Request $request)
@@ -136,7 +135,7 @@ class AuthController
 }
 ```
 
-### 复用规则集
+### Reusing Rule Sets
 
 ```php
 use support\Request;
@@ -153,7 +152,7 @@ class UserController
 }
 ```
 
-### 多重验证叠加
+### Multiple Validation Overlays
 
 ```php
 use support\validation\Validate;
@@ -169,9 +168,9 @@ class UserController
 }
 ```
 
-## 参数级验证（Param）
+## Parameter-Level Validation (Param)
 
-### 基本用法
+### Basic Usage
 
 ```php
 use support\validation\Param;
@@ -188,7 +187,7 @@ class MailController
 }
 ```
 
-### rules 支持字符串或数组
+### Rules Support String or Array
 
 ```php
 use support\validation\Param;
@@ -203,7 +202,7 @@ class MailController
 }
 ```
 
-### 自定义 messages / attribute
+### Custom Messages / Attribute
 
 ```php
 use support\validation\Param;
@@ -213,8 +212,8 @@ class UserController
     public function updateEmail(
         #[Param(
             rules: 'required|email',
-            messages: ['email.email' => '邮箱格式不正确'],
-            attribute: '邮箱'
+            messages: ['email.email' => 'Invalid email format'],
+            attribute: 'Email'
         )]
         string $email
     ) {
@@ -223,7 +222,7 @@ class UserController
 }
 ```
 
-### 规则常量复用
+### Reusing Rule Constants
 
 ```php
 final class ParamRules
@@ -241,7 +240,7 @@ class UserController
 }
 ```
 
-## 方法级 + 参数级混合
+## Method-Level + Parameter-Level Mixing
 
 ```php
 use support\Request;
@@ -261,9 +260,9 @@ class UserController
 }
 ```
 
-## 异常处理
+## Exception Handling
 
-验证失败抛出 `support\validation\ValidationException`，继承 `Webman\Exception\BusinessException`，不会记录错误日志。
+Validation failure throws `support\validation\ValidationException`, which inherits from `Webman\Exception\BusinessException` and does not log errors.
 
 ```php
 use support\validation\ValidationException;
@@ -279,47 +278,47 @@ try {
 }
 ```
 
-## 多语言支持
+## Multi-Language Support
 
-组件内置中英文语言包，并支持项目覆盖。加载顺序：
+The component includes built-in Chinese and English language packs and supports project overrides. Loading order:
 
-1. 项目语言包 `resource/translations/{locale}/validation.php`
-2. 组件内置 `vendor/webman/validation/resources/lang/{locale}/validation.php`
-3. Illuminate 内置英文（兜底）
+1. Project language pack `resource/translations/{locale}/validation.php`
+2. Component built-in `vendor/webman/validation/resources/lang/{locale}/validation.php`
+3. Illuminate built-in English (fallback)
 
-### 本地覆盖示例
+### Local Override Example
 
-`resource/translations/zh_CN/validation.php`
+`resource/translations/en/validation.php`
 
 ```php
 return [
-    'email' => ':attribute 不是有效的邮件格式。',
+    'email' => 'The :attribute is not a valid email format.',
 ];
 ```
 
-## 中间件自动加载
+## Middleware Auto-Loading
 
-组件安装后会通过 `config/plugin/webman/validation/middleware.php` 自动加载验证中间件，无需手动注册。
+After installation, the component automatically loads the validation middleware via `config/plugin/webman/validation/middleware.php`, no manual registration required.
 
-## 单元测试
+## Unit Testing
 
-进入 `webman/validation` 根目录执行：
+Enter the `webman/validation` root directory and execute:
 
 ```bash
 composer install
 vendor\bin\phpunit -c phpunit.xml
 ```
 
-## 所有验证规则参考
+## All Validation Rules Reference
 <a name="available-validation-rules"></a>
-## 可用验证规则
+## Available Validation Rules
 
 > [!IMPORTANT]
-> - Webman Validation 基于 `illuminate/validation`，规则名称与 Laravel 一致，规则本身无 Webman 特化。
-> - 中间件默认验证数据来自 `$request->all()`（GET+POST）并合并路由参数，不包含上传文件；涉及文件规则时，请自行将 `$request->file()` 合并到数据中，或手动调用 `Validator::make`。
-> - `current_password` 依赖认证守卫，`exists`/`unique` 依赖数据库连接与查询构建器，未接入对应组件时规则不可用。
+> - Webman Validation is based on `illuminate/validation`, with rule names consistent with Laravel, and the rules themselves have no Webman-specific modifications.
+> - The middleware validates data from `$request->all()` (GET+POST) by default and merges route parameters, excluding uploaded files; for file-related rules, manually merge `$request->file()` into the data or call `Validator::make` manually.
+> - `current_password` depends on authentication guards, `exists`/`unique` depend on database connections and query builders, and these rules are unavailable without integrating the corresponding components.
 
-以下列出所有可用验证规则及其作用：
+The following lists all available validation rules and their functions:
 
 <style>
     .collection-method-list > p {
@@ -334,7 +333,7 @@ vendor\bin\phpunit -c phpunit.xml
     }
 </style>
 
-#### 布尔值
+#### Boolean Values
 
 <div class="collection-method-list" markdown="1">
 
@@ -346,7 +345,7 @@ vendor\bin\phpunit -c phpunit.xml
 
 </div>
 
-#### 字符串
+#### Strings
 
 <div class="collection-method-list" markdown="1">
 
@@ -387,7 +386,7 @@ vendor\bin\phpunit -c phpunit.xml
 
 </div>
 
-#### 数字
+#### Numbers
 
 <div class="collection-method-list" markdown="1">
 
@@ -412,7 +411,7 @@ vendor\bin\phpunit -c phpunit.xml
 
 </div>
 
-#### 数组
+#### Arrays
 
 <div class="collection-method-list" markdown="1">
 
@@ -430,7 +429,7 @@ vendor\bin\phpunit -c phpunit.xml
 
 </div>
 
-#### 日期
+#### Dates
 
 <div class="collection-method-list" markdown="1">
 
@@ -446,7 +445,7 @@ vendor\bin\phpunit -c phpunit.xml
 
 </div>
 
-#### 文件
+#### Files
 
 <div class="collection-method-list" markdown="1">
 
@@ -463,7 +462,7 @@ vendor\bin\phpunit -c phpunit.xml
 
 </div>
 
-#### 数据库
+#### Database
 
 <div class="collection-method-list" markdown="1">
 
@@ -472,7 +471,7 @@ vendor\bin\phpunit -c phpunit.xml
 
 </div>
 
-#### 工具类
+#### Utilities
 
 <div class="collection-method-list" markdown="1">
 
@@ -518,22 +517,22 @@ vendor\bin\phpunit -c phpunit.xml
 <a name="rule-accepted"></a>
 #### accepted
 
-验证字段必须是 `"yes"`、`"on"`、`1`、`"1"`、`true` 或 `"true"`。常用于验证用户是否同意服务条款等场景。
+The field under validation must be `"yes"`, `"on"`, `1`, `"1"`, `true`, or `"true"`. This is commonly used for scenarios like confirming agreement to terms of service.
 
 <a name="rule-accepted-if"></a>
 #### accepted_if:anotherfield,value,...
 
-当另一个字段等于指定值时，验证字段必须是 `"yes"`、`"on"`、`1`、`"1"`、`true` 或 `"true"`。常用于条件性同意类场景。
+The field under validation must be `"yes"`, `"on"`, `1`, `"1"`, `true`, or `"true"` when another field equals the specified value. This is useful for conditional agreement scenarios.
 
 <a name="rule-active-url"></a>
 #### active_url
 
-验证字段必须具有有效的 A 或 AAAA 记录。该规则会先用 `parse_url` 提取 URL 的主机名，再交给 `dns_get_record` 校验。
+The field under validation must have a valid A or AAAA record. The rule first extracts the hostname using `parse_url` and then validates it with `dns_get_record`.
 
 <a name="rule-after"></a>
 #### after:_date_
 
-验证字段必须是给定日期之后的值。日期会传给 `strtotime` 转为有效的 `DateTime`：
+The field under validation must be a value after the given date. The date is converted to a valid `DateTime` using `strtotime`:
 
 ```php
 use support\validation\Validator;
@@ -543,7 +542,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-也可以传入另一个字段名进行比较：
+You can also pass another field name for comparison:
 
 ```php
 Validator::make($data, [
@@ -551,7 +550,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-可使用 fluent `date` 规则构造器：
+You can use the fluent `date` rule builder:
 
 ```php
 use support\validation\Rule;
@@ -565,7 +564,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-`afterToday` 和 `todayOrAfter` 可便捷表达“必须晚于今天”或“必须是今天或之后”：
+`afterToday` and `todayOrAfter` can conveniently express "must be after today" or "must be today or later":
 
 ```php
 Validator::make($data, [
@@ -579,9 +578,9 @@ Validator::make($data, [
 <a name="rule-after-or-equal"></a>
 #### after_or_equal:_date_
 
-验证字段必须是给定日期之后或等于给定日期。更多说明见 [after](#rule-after) 规则。
+The field under validation must be after or equal to the given date. For more details, see the [after](#rule-after) rule.
 
-可使用 fluent `date` 规则构造器：
+You can use the fluent `date` rule builder:
 
 ```php
 use support\validation\Rule;
@@ -598,7 +597,7 @@ Validator::make($data, [
 <a name="rule-anyof"></a>
 #### anyOf
 
-`Rule::anyOf` 允许指定“满足任意一个规则集即可”。例如，下面规则表示 `username` 要么是邮箱地址，要么是至少 6 位的字母数字下划线/短横线字符串：
+`Rule::anyOf` allows specifying "pass if any one of the rule sets is satisfied". For example, the following rule means `username` is either an email address or an alphanumeric string with underscores/dashes of at least 6 characters:
 
 ```php
 use support\validation\Rule;
@@ -618,9 +617,9 @@ Validator::make($data, [
 <a name="rule-alpha"></a>
 #### alpha
 
-验证字段必须是 Unicode 字母（[\p{L}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AL%3A%5D&g=&i=) 与 [\p{M}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AM%3A%5D&g=&i=)）。
+The field under validation must consist of Unicode letters ([\p{L}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AL%3A%5D&g=&i=) and [\p{M}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AM%3A%5D&g=&i=)).
 
-若仅允许 ASCII（`a-z`、`A-Z`），可添加 `ascii` 选项：
+To allow only ASCII (`a-z`, `A-Z`), add the `ascii` option:
 
 ```php
 Validator::make($data, [
@@ -631,9 +630,9 @@ Validator::make($data, [
 <a name="rule-alpha-dash"></a>
 #### alpha_dash
 
-验证字段只能包含 Unicode 字母数字（[\p{L}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AL%3A%5D&g=&i=)、[\p{M}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AM%3A%5D&g=&i=)、[\p{N}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AN%3A%5D&g=&i=)），以及 ASCII 短横线（`-`）与下划线（`_`）。
+The field under validation can only contain Unicode alphanumeric characters ([\p{L}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AL%3A%5D&g=&i=), [\p{M}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AM%3A%5D&g=&i=), [\p{N}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AN%3A%5D&g=&i=)), as well as ASCII dashes (`-`) and underscores (`_`).
 
-若仅允许 ASCII（`a-z`、`A-Z`、`0-9`），可添加 `ascii` 选项：
+To allow only ASCII (`a-z`, `A-Z`, `0-9`), add the `ascii` option:
 
 ```php
 Validator::make($data, [
@@ -644,9 +643,9 @@ Validator::make($data, [
 <a name="rule-alpha-num"></a>
 #### alpha_num
 
-验证字段只能包含 Unicode 字母数字（[\p{L}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AL%3A%5D&g=&i=)、[\p{M}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AM%3A%5D&g=&i=)、[\p{N}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AN%3A%5D&g=&i=)）。
+The field under validation can only contain Unicode alphanumeric characters ([\p{L}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AL%3A%5D&g=&i=), [\p{M}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AM%3A%5D&g=&i=), [\p{N}](https://util.unicode.org/UnicodeJsps/list-unicodeset.jsp?a=%5B%3AN%3A%5D&g=&i=)).
 
-若仅允许 ASCII（`a-z`、`A-Z`、`0-9`），可添加 `ascii` 选项：
+To allow only ASCII (`a-z`, `A-Z`, `0-9`), add the `ascii` option:
 
 ```php
 Validator::make($data, [
@@ -657,9 +656,9 @@ Validator::make($data, [
 <a name="rule-array"></a>
 #### array
 
-验证字段必须是 PHP `array`。
+The field under validation must be a PHP `array`.
 
-当 `array` 规则带有额外参数时，输入数组的键必须在参数列表中。示例中 `admin` 键不在允许列表中，因此无效：
+When the `array` rule includes additional parameters, the keys in the input array must be in the parameter list. In the example, the `admin` key is not in the allowed list, so it is invalid:
 
 ```php
 use support\validation\Validator;
@@ -677,26 +676,26 @@ Validator::make($input, [
 ])->validate();
 ```
 
-建议在实际项目中明确数组允许的键。
+It is recommended to explicitly specify the allowed keys for arrays in actual projects.
 
 <a name="rule-ascii"></a>
 #### ascii
 
-验证字段只能包含 7-bit ASCII 字符。
+The field under validation can only contain 7-bit ASCII characters.
 
 <a name="rule-bail"></a>
 #### bail
 
-当某字段首个规则验证失败时，停止继续验证该字段的其它规则。
+When the first validation rule for a field fails, stop validating the other rules for that field.
 
-该规则只影响当前字段。若需要“全局首错即停”，请直接使用 Illuminate 的验证器并调用 `stopOnFirstFailure()`。
+This rule only affects the current field. For "stop on first failure globally", use Illuminate's validator directly and call `stopOnFirstFailure()`.
 
 <a name="rule-before"></a>
 #### before:_date_
 
-验证字段必须早于给定日期。日期会传给 `strtotime` 转为有效的 `DateTime`。同 [after](#rule-after) 规则，可传入另一个字段名进行比较。
+The field under validation must be before the given date. The date is converted to a valid `DateTime` using `strtotime`. Similar to the [after](#rule-after) rule, you can pass another field name for comparison.
 
-可使用 fluent `date` 规则构造器：
+You can use the fluent `date` rule builder:
 
 ```php
 use support\validation\Rule;
@@ -710,7 +709,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-`beforeToday` 与 `todayOrBefore` 可便捷表达“必须早于今天”或“必须是今天或之前”：
+`beforeToday` and `todayOrBefore` can conveniently express "must be before today" or "must be today or earlier":
 
 ```php
 Validator::make($data, [
@@ -724,9 +723,9 @@ Validator::make($data, [
 <a name="rule-before-or-equal"></a>
 #### before_or_equal:_date_
 
-验证字段必须早于或等于给定日期。日期会传给 `strtotime` 转为有效的 `DateTime`。同 [after](#rule-after) 规则，可传入另一个字段名进行比较。
+The field under validation must be before or equal to the given date. The date is converted to a valid `DateTime` using `strtotime`. Similar to the [after](#rule-after) rule, you can pass another field name for comparison.
 
-可使用 fluent `date` 规则构造器：
+You can use the fluent `date` rule builder:
 
 ```php
 use support\validation\Rule;
@@ -743,14 +742,14 @@ Validator::make($data, [
 <a name="rule-between"></a>
 #### between:_min_,_max_
 
-验证字段的大小必须在给定的 _min_ 和 _max_ 之间（含边界）。字符串、数值、数组、文件的评估规则与 [size](#rule-size) 相同。
+The field under validation must have a size between the given _min_ and _max_ (inclusive). Strings, numbers, arrays, and files are evaluated using the same rules as [size](#rule-size).
 
 <a name="rule-boolean"></a>
 #### boolean
 
-验证字段必须可转换为布尔值。可接受的输入包括 `true`、`false`、`1`、`0`、`"1"`、`"0"`。
+The field under validation must be convertible to a boolean value. Acceptable inputs include `true`, `false`, `1`, `0`, `"1"`, `"0"`.
 
-可通过 `strict` 参数仅允许 `true` 或 `false`：
+You can use the `strict` parameter to allow only `true` or `false`:
 
 ```php
 Validator::make($data, [
@@ -761,14 +760,14 @@ Validator::make($data, [
 <a name="rule-confirmed"></a>
 #### confirmed
 
-验证字段必须有一个匹配字段 `{field}_confirmation`。例如字段为 `password` 时，需要 `password_confirmation`。
+The field under validation must have a matching field `{field}_confirmation`. For example, if the field is `password`, `password_confirmation` is required.
 
-也可以指定自定义确认字段名，如 `confirmed:repeat_username` 将要求 `repeat_username` 与当前字段匹配。
+You can also specify a custom confirmation field name, such as `confirmed:repeat_username`, which requires `repeat_username` to match the current field.
 
 <a name="rule-contains"></a>
 #### contains:_foo_,_bar_,...
 
-验证字段必须是数组，且必须包含所有给定参数值。该规则常用于数组校验，可使用 `Rule::contains` 构造：
+The field under validation must be an array and must contain all the given parameter values. This rule is often used for array validation and can be constructed using `Rule::contains`:
 
 ```php
 use support\validation\Rule;
@@ -786,7 +785,7 @@ Validator::make($data, [
 <a name="rule-doesnt-contain"></a>
 #### doesnt_contain:_foo_,_bar_,...
 
-验证字段必须是数组，且不能包含任何给定参数值。可使用 `Rule::doesntContain` 构造：
+The field under validation must be an array and must not contain any of the given parameter values. You can use `Rule::doesntContain` to construct:
 
 ```php
 use support\validation\Rule;
@@ -804,7 +803,7 @@ Validator::make($data, [
 <a name="rule-current-password"></a>
 #### current_password
 
-验证字段必须与当前认证用户的密码匹配。可通过第一个参数指定认证 guard：
+The field under validation must match the current authenticated user's password. You can specify the authentication guard via the first parameter:
 
 ```php
 Validator::make($data, [
@@ -813,24 +812,24 @@ Validator::make($data, [
 ```
 
 > [!WARNING]
-> 该规则依赖认证组件与 guard 配置，未接入认证时请勿使用。
+> This rule depends on the authentication component and guard configuration; do not use it without integrating authentication.
 
 <a name="rule-date"></a>
 #### date
 
-验证字段必须是 `strtotime` 可识别的有效（非相对）日期。
+The field under validation must be a valid (non-relative) date recognized by `strtotime`.
 
 <a name="rule-date-equals"></a>
 #### date_equals:_date_
 
-验证字段必须等于给定日期。日期会传给 `strtotime` 转为有效的 `DateTime`。
+The field under validation must equal the given date. The date is converted to a valid `DateTime` using `strtotime`.
 
 <a name="rule-date-format"></a>
 #### date_format:_format_,...
 
-验证字段必须匹配给定格式之一。使用 `date` 或 `date_format` 二选一即可。该规则支持 PHP [DateTime](https://www.php.net/manual/en/class.datetime.php) 的所有格式。
+The field under validation must match one of the given formats. Use either `date` or `date_format`. This rule supports all formats of PHP [DateTime](https://www.php.net/manual/en/class.datetime.php).
 
-可使用 fluent `date` 规则构造器：
+You can use the fluent `date` rule builder:
 
 ```php
 use support\validation\Rule;
@@ -847,7 +846,7 @@ Validator::make($data, [
 <a name="rule-decimal"></a>
 #### decimal:_min_,_max_
 
-验证字段必须是数值，且小数位数符合要求：
+The field under validation must be a number with the specified number of decimal places:
 
 ```php
 Validator::make($data, [
@@ -862,32 +861,32 @@ Validator::make($data, [
 <a name="rule-declined"></a>
 #### declined
 
-验证字段必须是 `"no"`、`"off"`、`0`、`"0"`、`false` 或 `"false"`。
+The field under validation must be `"no"`, `"off"`, `0`, `"0"`, `false`, or `"false"`.
 
 <a name="rule-declined-if"></a>
 #### declined_if:anotherfield,value,...
 
-当另一个字段等于指定值时，验证字段必须是 `"no"`、`"off"`、`0`、`"0"`、`false` 或 `"false"`。
+The field under validation must be `"no"`, `"off"`, `0`, `"0"`, `false`, or `"false"` when another field equals the specified value.
 
 <a name="rule-different"></a>
 #### different:_field_
 
-验证字段必须与 _field_ 不同。
+The field under validation must be different from _field_.
 
 <a name="rule-digits"></a>
 #### digits:_value_
 
-验证字段必须是整数且长度为 _value_。
+The field under validation must be an integer with a length of _value_.
 
 <a name="rule-digits-between"></a>
 #### digits_between:_min_,_max_
 
-验证字段必须是整数且长度在 _min_ 与 _max_ 之间。
+The field under validation must be an integer with a length between _min_ and _max_.
 
 <a name="rule-dimensions"></a>
 #### dimensions
 
-验证字段必须是图片，并满足维度约束：
+The field under validation must be an image and satisfy the dimension constraints:
 
 ```php
 Validator::make($data, [
@@ -895,9 +894,9 @@ Validator::make($data, [
 ])->validate();
 ```
 
-可用约束：_min\_width_、_max\_width_、_min\_height_、_max\_height_、_width_、_height_、_ratio_。
+Available constraints: _min_width_, _max_width_, _min_height_, _max_height_, _width_, _height_, _ratio_.
 
-_ratio_ 为宽高比，可用分数或浮点表示：
+_ratio_ is the aspect ratio, which can be expressed as a fraction or float:
 
 ```php
 Validator::make($data, [
@@ -905,7 +904,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-该规则参数较多，建议使用 `Rule::dimensions` 构造：
+Due to the many parameters in this rule, it is recommended to use `Rule::dimensions` to construct:
 
 ```php
 use support\validation\Rule;
@@ -925,7 +924,7 @@ Validator::make($data, [
 <a name="rule-distinct"></a>
 #### distinct
 
-当验证数组时，字段值不能重复：
+When validating an array, the field values must not be duplicated:
 
 ```php
 Validator::make($data, [
@@ -933,7 +932,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-默认使用宽松比较。需严格比较可添加 `strict`：
+By default, loose comparison is used. For strict comparison, add `strict`:
 
 ```php
 Validator::make($data, [
@@ -941,7 +940,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-可添加 `ignore_case` 忽略大小写差异：
+You can add `ignore_case` to ignore case differences:
 
 ```php
 Validator::make($data, [
@@ -952,17 +951,17 @@ Validator::make($data, [
 <a name="rule-doesnt-start-with"></a>
 #### doesnt_start_with:_foo_,_bar_,...
 
-验证字段不能以指定值开头。
+The field under validation must not start with the specified values.
 
 <a name="rule-doesnt-end-with"></a>
 #### doesnt_end_with:_foo_,_bar_,...
 
-验证字段不能以指定值结尾。
+The field under validation must not end with the specified values.
 
 <a name="rule-email"></a>
 #### email
 
-验证字段必须是有效邮箱地址。该规则依赖 [egulias/email-validator](https://github.com/egulias/EmailValidator)，默认使用 `RFCValidation`，也可指定其他验证方式：
+The field under validation must be a valid email address. This rule relies on [egulias/email-validator](https://github.com/egulias/EmailValidator), defaulting to `RFCValidation`, but other validation methods can be specified:
 
 ```php
 Validator::make($data, [
@@ -970,20 +969,20 @@ Validator::make($data, [
 ])->validate();
 ```
 
-可用验证方式列表：
+Available validation methods:
 
 <div class="content-list" markdown="1">
 
-- `rfc`: `RFCValidation` - 按 RFC 规范验证邮箱（[支持的 RFC](https://github.com/egulias/EmailValidator?tab=readme-ov-file#supported-rfcs)）。
-- `strict`: `NoRFCWarningsValidation` - RFC 校验时遇到警告即失败（如结尾点号或连续点号）。
-- `dns`: `DNSCheckValidation` - 校验域名是否有有效的 MX 记录。
-- `spoof`: `SpoofCheckValidation` - 防止同形异义或欺骗性 Unicode 字符。
-- `filter`: `FilterEmailValidation` - 使用 PHP `filter_var` 验证。
-- `filter_unicode`: `FilterEmailValidation::unicode()` - 允许 Unicode 的 `filter_var` 验证。
+- `rfc`: `RFCValidation` - Validates email according to RFC standards ([supported RFCs](https://github.com/egulias/EmailValidator?tab=readme-ov-file#supported-rfcs)).
+- `strict`: `NoRFCWarningsValidation` - Fails on warnings during RFC validation (e.g., trailing dots or consecutive dots).
+- `dns`: `DNSCheckValidation` - Checks if the domain has a valid MX record.
+- `spoof`: `SpoofCheckValidation` - Prevents homoglyph or deceptive Unicode characters.
+- `filter`: `FilterEmailValidation` - Validates using PHP `filter_var`.
+- `filter_unicode`: `FilterEmailValidation::unicode()` - Unicode-allowed `filter_var` validation.
 
 </div>
 
-可使用 fluent 规则构造器：
+You can use the fluent rule builder:
 
 ```php
 use support\validation\Rule;
@@ -1001,12 +1000,12 @@ Validator::make($data, [
 ```
 
 > [!WARNING]
-> `dns` 与 `spoof` 需要 PHP `intl` 扩展。
+> `dns` and `spoof` require the PHP `intl` extension.
 
 <a name="rule-encoding"></a>
 #### encoding:*encoding_type*
 
-验证字段必须匹配指定字符编码。该规则使用 `mb_check_encoding` 检测文件或字符串编码。可配合文件规则构造器使用：
+The field under validation must match the specified character encoding. This rule uses `mb_check_encoding` to detect the encoding of files or strings. It can be used with the file rule builder:
 
 ```php
 use support\validation\Rules\File;
@@ -1023,12 +1022,12 @@ Validator::make($data, [
 <a name="rule-ends-with"></a>
 #### ends_with:_foo_,_bar_,...
 
-验证字段必须以指定值之一结尾。
+The field under validation must end with one of the specified values.
 
 <a name="rule-enum"></a>
 #### enum
 
-`Enum` 是基于类的规则，用于验证字段值是否为合法枚举值。构造时传入枚举类名。验证基本类型值时，应使用 Backed Enum：
+`Enum` is a class-based rule used to validate if the field value is a valid enum value. Pass the enum class name during construction. For validating basic type values, use Backed Enum:
 
 ```php
 use app\enums\ServerStatus;
@@ -1040,7 +1039,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-可用 `only`/`except` 限制枚举值：
+You can use `only`/`except` to restrict enum values:
 
 ```php
 use app\enums\ServerStatus;
@@ -1062,7 +1061,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-可使用 `when` 进行条件限制：
+You can use `when` for conditional restrictions:
 
 ```php
 use app\Enums\ServerStatus;
@@ -1083,14 +1082,14 @@ Validator::make($data, [
 <a name="rule-exclude"></a>
 #### exclude
 
-验证字段会从 `validate`/`validated` 返回的数据中排除。
+The field under validation will be excluded from the data returned by `validate`/`validated`.
 
 <a name="rule-exclude-if"></a>
 #### exclude_if:_anotherfield_,_value_
 
-当 _anotherfield_ 等于 _value_ 时，验证字段会从 `validate`/`validated` 返回的数据中排除。
+The field under validation will be excluded from the data returned by `validate`/`validated` when _anotherfield_ equals _value_.
 
-如需复杂条件，可使用 `Rule::excludeIf`：
+For complex conditions, use `Rule::excludeIf`:
 
 ```php
 use support\validation\Rule;
@@ -1108,25 +1107,25 @@ Validator::make($data, [
 <a name="rule-exclude-unless"></a>
 #### exclude_unless:_anotherfield_,_value_
 
-除非 _anotherfield_ 等于 _value_，否则验证字段会从 `validate`/`validated` 返回的数据中排除。若 _value_ 为 `null`（如 `exclude_unless:name,null`），则只有当比较字段为 `null` 或不存在时才保留该字段。
+The field under validation will be excluded from the data returned by `validate`/`validated` unless _anotherfield_ equals _value_. If _value_ is `null` (e.g., `exclude_unless:name,null`), the field is retained only if the comparison field is `null` or does not exist.
 
 <a name="rule-exclude-with"></a>
 #### exclude_with:_anotherfield_
 
-当 _anotherfield_ 存在时，验证字段会从 `validate`/`validated` 返回的数据中排除。
+The field under validation will be excluded from the data returned by `validate`/`validated` when _anotherfield_ exists.
 
 <a name="rule-exclude-without"></a>
 #### exclude_without:_anotherfield_
 
-当 _anotherfield_ 不存在时，验证字段会从 `validate`/`validated` 返回的数据中排除。
+The field under validation will be excluded from the data returned by `validate`/`validated` when _anotherfield_ does not exist.
 
 <a name="rule-exists"></a>
 #### exists:_table_,_column_
 
-验证字段必须存在于指定数据库表中。
+The field under validation must exist in the specified database table.
 
 <a name="basic-usage-of-exists-rule"></a>
-#### Exists 规则的基础用法
+#### Basic Usage of Exists Rule
 
 ```php
 Validator::make($data, [
@@ -1134,12 +1133,12 @@ Validator::make($data, [
 ])->validate();
 ```
 
-未指定 `column` 时，默认使用字段名。因此该例会验证 `states` 表中 `state` 列是否存在。
+If `column` is not specified, the field name is used by default. Thus, this example validates if the `state` column exists in the `states` table.
 
 <a name="specifying-a-custom-column-name"></a>
-#### 指定自定义列名
+#### Specifying a Custom Column Name
 
-可在表名后追加列名：
+You can append the column name after the table name:
 
 ```php
 Validator::make($data, [
@@ -1147,7 +1146,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-如需指定数据库连接，可在表名前加连接名：
+To specify a database connection, prepend the connection name to the table:
 
 ```php
 Validator::make($data, [
@@ -1155,7 +1154,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-也可传入模型类名，由框架解析表名：
+You can also pass a model class name, and the framework will resolve the table name:
 
 ```php
 Validator::make($data, [
@@ -1163,7 +1162,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-若需自定义查询条件，可使用 `Rule` 规则构造器：
+To customize query conditions, use the `Rule` rule builder:
 
 ```php
 use Illuminate\Database\Query\Builder;
@@ -1180,7 +1179,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-也可在 `Rule::exists` 中直接指定列名：
+You can also specify the column name directly in `Rule::exists`:
 
 ```php
 use support\validation\Rule;
@@ -1191,7 +1190,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-验证一组值是否存在时，可结合 `array` 规则：
+When validating if a group of values exists, combine with the `array` rule:
 
 ```php
 Validator::make($data, [
@@ -1199,12 +1198,12 @@ Validator::make($data, [
 ])->validate();
 ```
 
-当 `array` 与 `exists` 同时存在时，会生成单条查询验证全部值。
+When `array` and `exists` coexist, a single query is generated to validate all values.
 
 <a name="rule-extensions"></a>
 #### extensions:_foo_,_bar_,...
 
-验证上传文件的扩展名是否在允许列表内：
+The uploaded file's extension must be in the allowed list:
 
 ```php
 Validator::make($data, [
@@ -1213,45 +1212,45 @@ Validator::make($data, [
 ```
 
 > [!WARNING]
-> 不要仅依赖扩展名验证文件类型，建议与 [mimes](#rule-mimes) 或 [mimetypes](#rule-mimetypes) 搭配使用。
+> Do not rely solely on extension validation for file types; it is recommended to use it with [mimes](#rule-mimes) or [mimetypes](#rule-mimetypes).
 
 <a name="rule-file"></a>
 #### file
 
-验证字段必须是成功上传的文件。
+The field under validation must be a successfully uploaded file.
 
 <a name="rule-filled"></a>
 #### filled
 
-当字段存在时，其值不能为空。
+When the field exists, its value must not be empty.
 
 <a name="rule-gt"></a>
 #### gt:_field_
 
-验证字段必须大于给定 _field_ 或 _value_。两个字段类型必须一致。字符串、数值、数组、文件的评估规则与 [size](#rule-size) 相同。
+The field under validation must be greater than the given _field_ or _value_. The two fields must be of the same type. Strings, numbers, arrays, and files are evaluated using the same rules as [size](#rule-size).
 
 <a name="rule-gte"></a>
 #### gte:_field_
 
-验证字段必须大于等于给定 _field_ 或 _value_。两个字段类型必须一致。字符串、数值、数组、文件的评估规则与 [size](#rule-size) 相同。
+The field under validation must be greater than or equal to the given _field_ or _value_. The two fields must be of the same type. Strings, numbers, arrays, and files are evaluated using the same rules as [size](#rule-size).
 
 <a name="rule-hex-color"></a>
 #### hex_color
 
-验证字段必须是有效的 [十六进制颜色值](https://developer.mozilla.org/en-US/docs/Web/CSS/hex-color)。
+The field under validation must be a valid [hexadecimal color value](https://developer.mozilla.org/en-US/docs/Web/CSS/hex-color).
 
 <a name="rule-image"></a>
 #### image
 
-验证字段必须是图片（jpg、jpeg、png、bmp、gif 或 webp）。
+The field under validation must be an image (jpg, jpeg, png, bmp, gif, or webp).
 
 > [!WARNING]
-> 出于 XSS 风险，默认不允许 SVG。如需允许，可加 `allow_svg`：`image:allow_svg`。
+> SVG is not allowed by default due to XSS risks. To allow it, add `allow_svg`: `image:allow_svg`.
 
 <a name="rule-in"></a>
 #### in:_foo_,_bar_,...
 
-验证字段必须在给定值列表中。可使用 `Rule::in` 构造：
+The field under validation must be in the given list of values. You can use `Rule::in` to construct:
 
 ```php
 use support\validation\Rule;
@@ -1265,7 +1264,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-与 `array` 规则组合时，输入数组的每个值都必须在 `in` 列表内：
+When combined with the `array` rule, every value in the input array must be in the `in` list:
 
 ```php
 use support\validation\Rule;
@@ -1287,12 +1286,12 @@ Validator::make($input, [
 <a name="rule-in-array"></a>
 #### in_array:_anotherfield_.*
 
-验证字段必须存在于 _anotherfield_ 的值列表中。
+The field under validation must exist in the value list of _anotherfield_.
 
 <a name="rule-in-array-keys"></a>
 #### in_array_keys:_value_.*
 
-验证字段必须是数组，且至少包含给定值之一作为键：
+The field under validation must be an array and must contain at least one of the given values as a key:
 
 ```php
 Validator::make($data, [
@@ -1303,9 +1302,9 @@ Validator::make($data, [
 <a name="rule-integer"></a>
 #### integer
 
-验证字段必须是整数。
+The field under validation must be an integer.
 
-可使用 `strict` 参数要求字段类型必须为整数，字符串形式的整数将视为无效：
+You can use the `strict` parameter to require the field type to be integer; string representations of integers will be considered invalid:
 
 ```php
 Validator::make($data, [
@@ -1314,67 +1313,67 @@ Validator::make($data, [
 ```
 
 > [!WARNING]
-> 该规则仅验证是否能通过 PHP 的 `FILTER_VALIDATE_INT`，如需强制数值类型，请与 [numeric](#rule-numeric) 配合使用。
+> This rule only checks if it passes PHP's `FILTER_VALIDATE_INT`; to enforce numeric types, use it with [numeric](#rule-numeric).
 
 <a name="rule-ip"></a>
 #### ip
 
-验证字段必须是合法 IP 地址。
+The field under validation must be a valid IP address.
 
 <a name="rule-ipv4"></a>
 #### ipv4
 
-验证字段必须是合法 IPv4 地址。
+The field under validation must be a valid IPv4 address.
 
 <a name="rule-ipv6"></a>
 #### ipv6
 
-验证字段必须是合法 IPv6 地址。
+The field under validation must be a valid IPv6 address.
 
 <a name="rule-json"></a>
 #### json
 
-验证字段必须是有效的 JSON 字符串。
+The field under validation must be a valid JSON string.
 
 <a name="rule-lt"></a>
 #### lt:_field_
 
-验证字段必须小于给定 _field_。两个字段类型必须一致。字符串、数值、数组、文件的评估规则与 [size](#rule-size) 相同。
+The field under validation must be less than the given _field_. The two fields must be of the same type. Strings, numbers, arrays, and files are evaluated using the same rules as [size](#rule-size).
 
 <a name="rule-lte"></a>
 #### lte:_field_
 
-验证字段必须小于等于给定 _field_。两个字段类型必须一致。字符串、数值、数组、文件的评估规则与 [size](#rule-size) 相同。
+The field under validation must be less than or equal to the given _field_. The two fields must be of the same type. Strings, numbers, arrays, and files are evaluated using the same rules as [size](#rule-size).
 
 <a name="rule-lowercase"></a>
 #### lowercase
 
-验证字段必须是小写。
+The field under validation must be lowercase.
 
 <a name="rule-list"></a>
 #### list
 
-验证字段必须是列表数组。列表数组的键必须是从 0 到 `count($array) - 1` 的连续数字。
+The field under validation must be a list array. The keys in a list array must be consecutive numbers from 0 to `count($array) - 1`.
 
 <a name="rule-mac"></a>
 #### mac_address
 
-验证字段必须是合法 MAC 地址。
+The field under validation must be a valid MAC address.
 
 <a name="rule-max"></a>
 #### max:_value_
 
-验证字段必须小于或等于 _value_。字符串、数值、数组、文件的评估规则与 [size](#rule-size) 相同。
+The field under validation must be less than or equal to _value_. Strings, numbers, arrays, and files are evaluated using the same rules as [size](#rule-size).
 
 <a name="rule-max-digits"></a>
 #### max_digits:_value_
 
-验证字段必须是整数，且长度不超过 _value_。
+The field under validation must be an integer with a length not exceeding _value_.
 
 <a name="rule-mimetypes"></a>
 #### mimetypes:_text/plain_,...
 
-验证文件的 MIME 类型是否在列表内：
+The file's MIME type must be in the list:
 
 ```php
 Validator::make($data, [
@@ -1382,12 +1381,12 @@ Validator::make($data, [
 ])->validate();
 ```
 
-MIME 类型通过读取文件内容猜测，可能与客户端提供的 MIME 不一致。
+The MIME type is guessed by reading the file content, which may differ from the client-provided MIME.
 
 <a name="rule-mimes"></a>
 #### mimes:_foo_,_bar_,...
 
-验证文件的 MIME 类型是否与给定扩展名对应：
+The file's MIME type must correspond to the given extension:
 
 ```php
 Validator::make($data, [
@@ -1395,59 +1394,59 @@ Validator::make($data, [
 ])->validate();
 ```
 
-尽管参数是扩展名，该规则会读取文件内容判断 MIME。扩展名与 MIME 对照表见：
+Although the parameters are extensions, this rule reads the file content to determine the MIME. The extension-to-MIME mapping is from:
 
 [https://svn.apache.org/repos/asf/httpd/httpd/trunk/docs/conf/mime.types](https://svn.apache.org/repos/asf/httpd/httpd/trunk/docs/conf/mime.types)
 
 <a name="mime-types-and-extensions"></a>
-#### MIME 类型与扩展名
+#### MIME Types and Extensions
 
-该规则不验证“文件名扩展名”与“实际 MIME”是否一致。例如，`mimes:png` 会将内容为 PNG 的 `photo.txt` 视为合法。如果需要验证扩展名，请使用 [extensions](#rule-extensions)。
+This rule does not validate if the "filename extension" matches the "actual MIME". For example, `mimes:png` will consider `photo.txt` with PNG content as valid. To validate extensions, use [extensions](#rule-extensions).
 
 <a name="rule-min"></a>
 #### min:_value_
 
-验证字段必须大于或等于 _value_。字符串、数值、数组、文件的评估规则与 [size](#rule-size) 相同。
+The field under validation must be greater than or equal to _value_. Strings, numbers, arrays, and files are evaluated using the same rules as [size](#rule-size).
 
 <a name="rule-min-digits"></a>
 #### min_digits:_value_
 
-验证字段必须是整数，且长度不少于 _value_。
+The field under validation must be an integer with a length of at least _value_.
 
 <a name="rule-multiple-of"></a>
 #### multiple_of:_value_
 
-验证字段必须是 _value_ 的倍数。
+The field under validation must be a multiple of _value_.
 
 <a name="rule-missing"></a>
 #### missing
 
-验证字段必须不存在于输入数据中。
+The field under validation must not exist in the input data.
 
 <a name="rule-missing-if"></a>
 #### missing_if:_anotherfield_,_value_,...
 
-当 _anotherfield_ 等于任一 _value_ 时，验证字段必须不存在。
+The field under validation must not exist when _anotherfield_ equals any _value_.
 
 <a name="rule-missing-unless"></a>
 #### missing_unless:_anotherfield_,_value_
 
-除非 _anotherfield_ 等于任一 _value_，否则验证字段必须不存在。
+The field under validation must not exist unless _anotherfield_ equals any _value_.
 
 <a name="rule-missing-with"></a>
 #### missing_with:_foo_,_bar_,...
 
-当任意指定字段存在时，验证字段必须不存在。
+The field under validation must not exist when any of the specified fields exist.
 
 <a name="rule-missing-with-all"></a>
 #### missing_with_all:_foo_,_bar_,...
 
-当所有指定字段都存在时，验证字段必须不存在。
+The field under validation must not exist when all specified fields exist.
 
 <a name="rule-not-in"></a>
 #### not_in:_foo_,_bar_,...
 
-验证字段必须不在给定值列表中。可使用 `Rule::notIn` 构造：
+The field under validation must not be in the given list of values. You can use `Rule::notIn` to construct:
 
 ```php
 use support\validation\Rule;
@@ -1464,24 +1463,24 @@ Validator::make($data, [
 <a name="rule-not-regex"></a>
 #### not_regex:_pattern_
 
-验证字段不能匹配给定正则表达式。
+The field under validation must not match the given regular expression.
 
-该规则使用 PHP `preg_match`。正则必须带分隔符，例如：`'email' => 'not_regex:/^.+$/i'`。
+This rule uses PHP `preg_match`. The regex must include delimiters, e.g., `'email' => 'not_regex:/^.+$/i'`.
 
 > [!WARNING]
-> 使用 `regex` / `not_regex` 时，如正则包含 `|`，建议用数组形式声明规则，避免与 `|` 分隔符冲突。
+> When using `regex` / `not_regex`, if the regex contains `|`, it is recommended to declare rules in array form to avoid conflicts with the `|` separator.
 
 <a name="rule-nullable"></a>
 #### nullable
 
-验证字段允许为 `null`。
+The field under validation may be `null`.
 
 <a name="rule-numeric"></a>
 #### numeric
 
-验证字段必须是 [numeric](https://www.php.net/manual/en/function.is-numeric.php)。
+The field under validation must be [numeric](https://www.php.net/manual/en/function.is-numeric.php).
 
-可使用 `strict` 参数仅允许整数或浮点类型，数值字符串将视为无效：
+You can use the `strict` parameter to allow only integer or float types; numeric strings will be considered invalid:
 
 ```php
 Validator::make($data, [
@@ -1492,57 +1491,57 @@ Validator::make($data, [
 <a name="rule-present"></a>
 #### present
 
-验证字段必须存在于输入数据中。
+The field under validation must exist in the input data.
 
 <a name="rule-present-if"></a>
 #### present_if:_anotherfield_,_value_,...
 
-当 _anotherfield_ 等于任一 _value_ 时，验证字段必须存在。
+The field under validation must exist when _anotherfield_ equals any _value_.
 
 <a name="rule-present-unless"></a>
 #### present_unless:_anotherfield_,_value_
 
-除非 _anotherfield_ 等于任一 _value_，否则验证字段必须存在。
+The field under validation must exist unless _anotherfield_ equals any _value_.
 
 <a name="rule-present-with"></a>
 #### present_with:_foo_,_bar_,...
 
-当任意指定字段存在时，验证字段必须存在。
+The field under validation must exist when any of the specified fields exist.
 
 <a name="rule-present-with-all"></a>
 #### present_with_all:_foo_,_bar_,...
 
-当所有指定字段都存在时，验证字段必须存在。
+The field under validation must exist when all specified fields exist.
 
 <a name="rule-prohibited"></a>
 #### prohibited
 
-验证字段必须缺失或为空。字段“为空”指：
+The field under validation must be missing or empty. A field is "empty" if:
 
 <div class="content-list" markdown="1">
 
-- 值为 `null`。
-- 值为空字符串。
-- 值为空数组或空的 `Countable` 对象。
-- 为上传文件且路径为空。
+- The value is `null`.
+- The value is an empty string.
+- The value is an empty array or empty `Countable` object.
+- It is an uploaded file with an empty path.
 
 </div>
 
 <a name="rule-prohibited-if"></a>
 #### prohibited_if:_anotherfield_,_value_,...
 
-当 _anotherfield_ 等于任一 _value_ 时，验证字段必须缺失或为空。字段“为空”指：
+The field under validation must be missing or empty when _anotherfield_ equals any _value_. A field is "empty" if:
 
 <div class="content-list" markdown="1">
 
-- 值为 `null`。
-- 值为空字符串。
-- 值为空数组或空的 `Countable` 对象。
-- 为上传文件且路径为空。
+- The value is `null`.
+- The value is an empty string.
+- The value is an empty array or empty `Countable` object.
+- It is an uploaded file with an empty path.
 
 </div>
 
-如需复杂条件，可使用 `Rule::prohibitedIf`：
+For complex conditions, use `Rule::prohibitedIf`:
 
 ```php
 use support\validation\Rule;
@@ -1560,71 +1559,71 @@ Validator::make($data, [
 <a name="rule-prohibited-if-accepted"></a>
 #### prohibited_if_accepted:_anotherfield_,...
 
-当 _anotherfield_ 为 `"yes"`、`"on"`、`1`、`"1"`、`true` 或 `"true"` 时，验证字段必须缺失或为空。
+The field under validation must be missing or empty when _anotherfield_ is `"yes"`, `"on"`, `1`, `"1"`, `true`, or `"true"`.
 
 <a name="rule-prohibited-if-declined"></a>
 #### prohibited_if_declined:_anotherfield_,...
 
-当 _anotherfield_ 为 `"no"`、`"off"`、`0`、`"0"`、`false` 或 `"false"` 时，验证字段必须缺失或为空。
+The field under validation must be missing or empty when _anotherfield_ is `"no"`, `"off"`, `0`, `"0"`, `false`, or `"false"`.
 
 <a name="rule-prohibited-unless"></a>
 #### prohibited_unless:_anotherfield_,_value_,...
 
-除非 _anotherfield_ 等于任一 _value_，否则验证字段必须缺失或为空。字段“为空”指：
+The field under validation must be missing or empty unless _anotherfield_ equals any _value_. A field is "empty" if:
 
 <div class="content-list" markdown="1">
 
-- 值为 `null`。
-- 值为空字符串。
-- 值为空数组或空的 `Countable` 对象。
-- 为上传文件且路径为空。
+- The value is `null`.
+- The value is an empty string.
+- The value is an empty array or empty `Countable` object.
+- It is an uploaded file with an empty path.
 
 </div>
 
 <a name="rule-prohibits"></a>
 #### prohibits:_anotherfield_,...
 
-当验证字段存在且不为空时，_anotherfield_ 中所有字段必须缺失或为空。字段“为空”指：
+When the field under validation exists and is not empty, all fields in _anotherfield_ must be missing or empty. A field is "empty" if:
 
 <div class="content-list" markdown="1">
 
-- 值为 `null`。
-- 值为空字符串。
-- 值为空数组或空的 `Countable` 对象。
-- 为上传文件且路径为空。
+- The value is `null`.
+- The value is an empty string.
+- The value is an empty array or empty `Countable` object.
+- It is an uploaded file with an empty path.
 
 </div>
 
 <a name="rule-regex"></a>
 #### regex:_pattern_
 
-验证字段必须匹配给定正则表达式。
+The field under validation must match the given regular expression.
 
-该规则使用 PHP `preg_match`。正则必须带分隔符，例如：`'email' => 'regex:/^.+@.+$/i'`。
+This rule uses PHP `preg_match`. The regex must include delimiters, e.g., `'email' => 'regex:/^.+@.+$/i'`.
 
 > [!WARNING]
-> 使用 `regex` / `not_regex` 时，如正则包含 `|`，建议用数组形式声明规则，避免与 `|` 分隔符冲突。
+> When using `regex` / `not_regex`, if the regex contains `|`, it is recommended to declare rules in array form to avoid conflicts with the `|` separator.
 
 <a name="rule-required"></a>
 #### required
 
-验证字段必须存在且不能为空。字段“为空”指：
+The field under validation must exist and not be empty. A field is "empty" if:
 
 <div class="content-list" markdown="1">
 
-- 值为 `null`。
-- 值为空字符串。
-- 值为空数组或空的 `Countable` 对象。
-- 为上传文件且路径为空。
+- The value is `null`.
+- The value is an empty string.
+- The value is an empty array or empty `Countable` object.
+- It is an uploaded file with an empty path.
 
 </div>
 
 <a name="rule-required-if"></a>
 #### required_if:_anotherfield_,_value_,...
 
-当 _anotherfield_ 等于任一 _value_ 时，验证字段必须存在且不能为空。
+The field under validation must exist and not be empty when _anotherfield_ equals any _value_.
 
-如需复杂条件，可使用 `Rule::requiredIf`：
+For complex conditions, use `Rule::requiredIf`:
 
 ```php
 use support\validation\Rule;
@@ -1642,47 +1641,47 @@ Validator::make($data, [
 <a name="rule-required-if-accepted"></a>
 #### required_if_accepted:_anotherfield_,...
 
-当 _anotherfield_ 为 `"yes"`、`"on"`、`1`、`"1"`、`true` 或 `"true"` 时，验证字段必须存在且不能为空。
+The field under validation must exist and not be empty when _anotherfield_ is `"yes"`, `"on"`, `1`, `"1"`, `true`, or `"true"`.
 
 <a name="rule-required-if-declined"></a>
 #### required_if_declined:_anotherfield_,...
 
-当 _anotherfield_ 为 `"no"`、`"off"`、`0`、`"0"`、`false` 或 `"false"` 时，验证字段必须存在且不能为空。
+The field under validation must exist and not be empty when _anotherfield_ is `"no"`, `"off"`, `0`, `"0"`, `false`, or `"false"`.
 
 <a name="rule-required-unless"></a>
 #### required_unless:_anotherfield_,_value_,...
 
-除非 _anotherfield_ 等于任一 _value_，否则验证字段必须存在且不能为空。若 _value_ 为 `null`（如 `required_unless:name,null`），则只有当比较字段为 `null` 或不存在时才允许验证字段为空。
+The field under validation must exist and not be empty unless _anotherfield_ equals any _value_. If _value_ is `null` (e.g., `required_unless:name,null`), the field is allowed to be empty only if the comparison field is `null` or does not exist.
 
 <a name="rule-required-with"></a>
 #### required_with:_foo_,_bar_,...
 
-当任意指定字段存在且不为空时，验证字段必须存在且不能为空。
+The field under validation must exist and not be empty when any specified field exists and is not empty.
 
 <a name="rule-required-with-all"></a>
 #### required_with_all:_foo_,_bar_,...
 
-当所有指定字段都存在且不为空时，验证字段必须存在且不能为空。
+The field under validation must exist and not be empty when all specified fields exist and are not empty.
 
 <a name="rule-required-without"></a>
 #### required_without:_foo_,_bar_,...
 
-当任意指定字段为空或不存在时，验证字段必须存在且不能为空。
+The field under validation must exist and not be empty when any specified field is empty or does not exist.
 
 <a name="rule-required-without-all"></a>
 #### required_without_all:_foo_,_bar_,...
 
-当所有指定字段都为空或不存在时，验证字段必须存在且不能为空。
+The field under validation must exist and not be empty when all specified fields are empty or do not exist.
 
 <a name="rule-required-array-keys"></a>
 #### required_array_keys:_foo_,_bar_,...
 
-验证字段必须是数组，且至少包含指定的键。
+The field under validation must be an array and must contain at least the specified keys.
 
 <a name="validating-when-present"></a>
 #### sometimes
 
-仅当字段存在时，才应用后续验证规则。常用于“可选但一旦存在就必须合法”的字段：
+Apply subsequent validation rules only when the field exists. Commonly used for fields that are "optional but must be valid if present":
 
 ```php
 Validator::make($data, [
@@ -1693,12 +1692,12 @@ Validator::make($data, [
 <a name="rule-same"></a>
 #### same:_field_
 
-验证字段必须与 _field_ 相同。
+The field under validation must be the same as _field_.
 
 <a name="rule-size"></a>
 #### size:_value_
 
-验证字段大小必须等于给定 _value_。字符串为字符数；数值为指定整数（需配合 `numeric` 或 `integer`）；数组为元素数；文件为 KB 大小。示例：
+The field under validation must have a size equal to the given _value_. For strings, it is the character count; for numbers, it is the specified integer (use with `numeric` or `integer`); for arrays, it is the element count; for files, it is the size in KB. Example:
 
 ```php
 Validator::make($data, [
@@ -1712,17 +1711,17 @@ Validator::make($data, [
 <a name="rule-starts-with"></a>
 #### starts_with:_foo_,_bar_,...
 
-验证字段必须以指定值之一开头。
+The field under validation must start with one of the specified values.
 
 <a name="rule-string"></a>
 #### string
 
-验证字段必须是字符串。如需允许 `null`，请配合 `nullable` 使用。
+The field under validation must be a string. To allow `null`, use with `nullable`.
 
 <a name="rule-timezone"></a>
 #### timezone
 
-验证字段必须是有效时区标识符（来自 `DateTimeZone::listIdentifiers`）。可传入该方法支持的参数：
+The field under validation must be a valid timezone identifier (from `DateTimeZone::listIdentifiers`). Parameters supported by this method can be passed:
 
 ```php
 Validator::make($data, [
@@ -1741,11 +1740,11 @@ Validator::make($data, [
 <a name="rule-unique"></a>
 #### unique:_table_,_column_
 
-验证字段在指定表中必须唯一。
+The field under validation must be unique in the specified table.
 
-**指定自定义表/列名：**
+**Specifying Custom Table/Column Names:**
 
-可直接指定模型类名：
+You can directly specify the model class name:
 
 ```php
 Validator::make($data, [
@@ -1753,7 +1752,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-可指定列名（不指定时默认字段名）：
+You can specify the column name (defaults to the field name if not specified):
 
 ```php
 Validator::make($data, [
@@ -1761,7 +1760,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-**指定数据库连接：**
+**Specifying Database Connection:**
 
 ```php
 Validator::make($data, [
@@ -1769,7 +1768,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-**忽略指定 ID：**
+**Ignoring a Specific ID:**
 
 ```php
 use support\validation\Rule;
@@ -1784,9 +1783,9 @@ Validator::make($data, [
 ```
 
 > [!WARNING]
-> `ignore` 不应接收用户输入，仅应使用系统生成的唯一 ID（自增 ID 或模型 UUID），否则可能存在 SQL 注入风险。
+> `ignore` should not receive user input; only use system-generated unique IDs (auto-increment IDs or model UUIDs), otherwise there may be SQL injection risks.
 
-也可传入模型实例：
+You can also pass a model instance:
 
 ```php
 use support\validation\Rule;
@@ -1799,7 +1798,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-若主键不是 `id`，可指定主键名：
+If the primary key is not `id`, specify the primary key name:
 
 ```php
 use support\validation\Rule;
@@ -1812,7 +1811,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-默认以字段名作为唯一列，亦可指定列名：
+By default, the field name is used as the unique column, but you can specify the column name:
 
 ```php
 use support\validation\Rule;
@@ -1825,7 +1824,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-**添加额外条件：**
+**Adding Extra Conditions:**
 
 ```php
 use Illuminate\Database\Query\Builder;
@@ -1841,7 +1840,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-**忽略软删除记录：**
+**Ignoring Soft-Deleted Records:**
 
 ```php
 use support\validation\Rule;
@@ -1852,7 +1851,7 @@ Validator::make($data, [
 ])->validate();
 ```
 
-若软删除列名不是 `deleted_at`：
+If the soft-delete column name is not `deleted_at`:
 
 ```php
 use support\validation\Rule;
@@ -1866,14 +1865,14 @@ Validator::make($data, [
 <a name="rule-uppercase"></a>
 #### uppercase
 
-验证字段必须为大写。
+The field under validation must be uppercase.
 
 <a name="rule-url"></a>
 #### url
 
-验证字段必须是有效 URL。
+The field under validation must be a valid URL.
 
-可指定允许的协议：
+You can specify allowed protocols:
 
 ```php
 Validator::make($data, [
@@ -1885,17 +1884,18 @@ Validator::make($data, [
 <a name="rule-ulid"></a>
 #### ulid
 
-验证字段必须是有效 [ULID](https://github.com/ulid/spec)。
+The field under validation must be a valid [ULID](https://github.com/ulid/spec).
 
 <a name="rule-uuid"></a>
 #### uuid
 
-验证字段必须是有效的 RFC 9562 UUID（版本 1、3、4、5、6、7 或 8）。
+The field under validation must be a valid RFC 9562 UUID (versions 1, 3, 4, 5, 6, 7, or 8).
 
-可指定版本：
+You can specify the version:
 
 ```php
 Validator::make($data, [
     'uuid' => 'uuid:4',
 ])->validate();
+```
 ```
