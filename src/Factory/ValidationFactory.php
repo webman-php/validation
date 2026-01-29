@@ -3,10 +3,15 @@ declare(strict_types=1);
 
 namespace Webman\Validation\Factory;
 
+use Illuminate\Container\Container;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Translation\FileLoader;
 use Illuminate\Translation\Translator;
 use Illuminate\Validation\Factory;
+use Illuminate\Validation\DatabasePresenceVerifier;
+use Illuminate\Validation\DatabasePresenceVerifierInterface;
+use Illuminate\Support\Facades\Facade;
 
 final class ValidationFactory
 {
@@ -17,6 +22,8 @@ final class ValidationFactory
         if (self::$factory === null) {
             self::$factory = self::createFactory();
         }
+
+        self::bindPresenceVerifier(self::$factory);
 
         return self::$factory;
     }
@@ -31,7 +38,42 @@ final class ValidationFactory
             $translator->setFallback($fallback);
         }
 
-        return new Factory($translator);
+        $factory = new Factory($translator);
+        self::bindFacadeRoot($factory);
+        self::bindPresenceVerifier($factory);
+        return $factory;
+    }
+
+    private static function bindFacadeRoot(Factory $factory): void
+    {
+        if (Facade::getFacadeApplication() !== null) {
+            return;
+        }
+
+        $container = new Container();
+        $container->instance('validator', $factory);
+        Facade::setFacadeApplication($container);
+    }
+
+    private static function bindPresenceVerifier(Factory $factory): void
+    {
+        if ($factory->getPresenceVerifier() instanceof DatabasePresenceVerifierInterface) {
+            return;
+        }
+
+        if (!class_exists(DatabasePresenceVerifier::class) || !class_exists(Model::class)) {
+            return;
+        }
+
+        $resolver = Model::getConnectionResolver();
+        if ($resolver === null && class_exists('support\\Model')) {
+            $resolver = Model::getConnectionResolver();
+        }
+        if ($resolver === null) {
+            return;
+        }
+
+        $factory->setPresenceVerifier(new DatabasePresenceVerifier($resolver));
     }
 
     private static function createLoader(): FileLoader
