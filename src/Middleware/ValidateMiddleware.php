@@ -80,10 +80,7 @@ final class ValidateMiddleware
             $value = $parameter->getDefaultValue();
         }
 
-        $rules = trim($config->rules);
-        if ($rules === '') {
-            return;
-        }
+        $rules = $config->rules;
 
         $attributes = [];
         if ($config->attribute !== '') {

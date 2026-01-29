@@ -9,7 +9,7 @@ use Attribute;
 class Param
 {
     public function __construct(
-        public string $rules = '',
+        public string|array $rules = '',
         public array $messages = [],
         public string $attribute = ''
     ) {
