@@ -263,7 +263,7 @@ class UserController
 
 ## Exception Handling
 
-#### Default Exception
+### Default Exception
 
 Validation failure throws `support\validation\ValidationException`, which inherits from `Webman\Exception\BusinessException` and does not log errors.
 
@@ -272,7 +272,7 @@ Default response behavior is handled by `BusinessException::render()`:
 - Non-JSON requests: return a plain string message, e.g. `token is required.`
 - JSON requests: return JSON response, e.g. `{"code": 422, "msg": "token is required.", "data":....}`
 
-#### Customize with a custom exception
+### Customize with a custom exception
 
 - Global config: `exception` in `config/plugin/webman/validation/app.php`
 - Method-level override: `#[Validate(..., exception: MyValidateException::class)]`

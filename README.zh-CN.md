@@ -264,7 +264,7 @@ class UserController
 
 ## 异常处理
 
-#### 默认异常
+### 默认异常
 
 验证失败默认抛出 `support\validation\ValidationException`，继承 `Webman\Exception\BusinessException`，不会记录错误日志。
 
@@ -273,7 +273,7 @@ class UserController
 - 普通请求：返回字符串消息，例如 `token 为必填项。`
 - JSON 请求：返回 JSON 响应，例如 `{"code": 422, "msg": "token 为必填项。", "data":....}`
 
-#### 通过自定义异常修改处理方式
+### 通过自定义异常修改处理方式
 
 - 全局配置：`config/plugin/webman/validation/app.php` 的 `exception`
 - 方法级覆盖：`#[Validate(..., exception: MyValidateException::class)]`
