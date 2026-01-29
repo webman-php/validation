@@ -16,6 +16,7 @@ composer require webman/validation
 - **Method-Level Validation**: Use `#[Validate]` to bind to controller methods.
 - **Parameter-Level Validation**: Use `#[Param]` to bind to controller method parameters.
 - **Exception Handling**: Throws `support\validation\ValidationException` on validation failure; the exception class is configurable via config or annotation arguments.
+- **Database Validation**: If database validation is involved, you need to install `composer require webman/database`.
 
 ## Manual Validation
 
@@ -262,21 +263,20 @@ class UserController
 
 ## Exception Handling
 
+#### Default Exception
+
 Validation failure throws `support\validation\ValidationException`, which inherits from `Webman\Exception\BusinessException` and does not log errors.
 
-```php
-use support\validation\ValidationException;
+Default response behavior is handled by `BusinessException::render()`:
 
-try {
-    // validate...
-} catch (ValidationException $e) {
-    return json([
-        'code' => $e->getCode(),
-        'msg' => $e->getMessage(),
-        'errors' => $e->errors(),
-    ]);
-}
-```
+- Non-JSON requests: return a plain string message, e.g. `token is required.`
+- JSON requests: return JSON response, e.g. `{"code": 422, "msg": "token is required.", "data":....}`
+
+#### Customize with a custom exception
+
+- Global config: `exception` in `config/plugin/webman/validation/app.php`
+- Method-level override: `#[Validate(..., exception: MyValidateException::class)]`
+- Parameter-level override: `#[Param(..., exception: MyValidateException::class)]`
 
 ## Multi-Language Support
 
@@ -285,6 +285,9 @@ The component includes built-in Chinese and English language packs and supports 
 1. Project language pack `resource/translations/{locale}/validation.php`
 2. Component built-in `vendor/webman/validation/resources/lang/{locale}/validation.php`
 3. Illuminate built-in English (fallback)
+
+> **Note**  
+> The default language of webman is configured in `config/translation.php`, and it can also be changed using the function `locale('en');`.
 
 ### Local Override Example
 

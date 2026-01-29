@@ -17,6 +17,7 @@ composer require webman/validation
 - **方法级验证**：使用 `#[Validate]` 绑定控制器方法。
 - **参数级验证**：使用 `#[Param]` 绑定控制器方法参数。
 - **异常处理**：验证失败抛出 `support\validation\ValidationException`，异常类可通过配置或注解参数自定义
+- **数据库验证**：如果涉及数据库验证，需要安装 `composer require webman/database` 
 
 ## 手动验证
 
@@ -263,21 +264,20 @@ class UserController
 
 ## 异常处理
 
-验证失败抛出 `support\validation\ValidationException`，继承 `Webman\Exception\BusinessException`，不会记录错误日志。
+#### 默认异常
 
-```php
-use support\validation\ValidationException;
+验证失败默认抛出 `support\validation\ValidationException`，继承 `Webman\Exception\BusinessException`，不会记录错误日志。
 
-try {
-    // validate...
-} catch (ValidationException $e) {
-    return json([
-        'code' => $e->getCode(),
-        'msg' => $e->getMessage(),
-        'errors' => $e->errors(),
-    ]);
-}
-```
+默认响应行为由 `BusinessException::render()` 处理：
+
+- 普通请求：返回字符串消息，例如 `token 为必填项。`
+- JSON 请求：返回 JSON 响应，例如 `{"code": 422, "msg": "token 为必填项。", "data":....}`
+
+#### 通过自定义异常修改处理方式
+
+- 全局配置：`config/plugin/webman/validation/app.php` 的 `exception`
+- 方法级覆盖：`#[Validate(..., exception: MyValidateException::class)]`
+- 参数级覆盖：`#[Param(..., exception: MyValidateException::class)]`
 
 ## 多语言支持
 
@@ -286,6 +286,9 @@ try {
 1. 项目语言包 `resource/translations/{locale}/validation.php`
 2. 组件内置 `vendor/webman/validation/resources/lang/{locale}/validation.php`
 3. Illuminate 内置英文（兜底）
+
+> **提示**
+> webman默认语言由 `config/translation.php` 配置，也可以通过函数 locale('en'); 更改。
 
 ### 本地覆盖示例
 
