@@ -1898,4 +1898,3 @@ Validator::make($data, [
     'uuid' => 'uuid:4',
 ])->validate();
 ```
-```
