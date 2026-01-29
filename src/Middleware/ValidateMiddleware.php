@@ -14,6 +14,8 @@ use Webman\Validation\Validator;
 
 final class ValidateMiddleware
 {
+    private static array $metadataCache = [];
+
     public function process(Request $request, callable $handler)
     {
         $controller = $request->controller ?: '';
@@ -22,30 +24,26 @@ final class ValidateMiddleware
             return $handler($request);
         }
 
-        if (!method_exists($controller, $action)) {
+        $metadata = $this->getMethodMetadata($controller, $action);
+        if ($metadata === null || !$metadata['has']) {
             return $handler($request);
         }
 
-        $method = new ReflectionMethod($controller, $action);
-
         $data = $this->getRequestData($request);
 
-        $this->handleMethodValidation($method, $data);
-        $this->handleParamValidation($method, $data);
+        $this->handleMethodValidation($metadata['methods'], $data);
+        $this->handleParamValidation($metadata['params'], $data);
 
         return $handler($request);
     }
 
-    private function handleMethodValidation(ReflectionMethod $method, array $data): void
+    private function handleMethodValidation(array $methods, array $data): void
     {
-        $attributes = $method->getAttributes(Validate::class, \ReflectionAttribute::IS_INSTANCEOF);
-        if (!$attributes) {
+        if ($methods === []) {
             return;
         }
 
-        foreach ($attributes as $attribute) {
-            /** @var Validate $config */
-            $config = $attribute->newInstance();
+        foreach ($methods as $config) {
             [$rules, $messages, $attributesMap] = $this->resolveMethodRules($config);
             if (!$rules) {
                 continue;
@@ -54,30 +52,21 @@ final class ValidateMiddleware
         }
     }
 
-    private function handleParamValidation(ReflectionMethod $method, array $data): void
+    private function handleParamValidation(array $params, array $data): void
     {
-        foreach ($method->getParameters() as $parameter) {
-            $attributes = $parameter->getAttributes(Param::class, \ReflectionAttribute::IS_INSTANCEOF);
-            if (!$attributes) {
-                continue;
-            }
-            foreach ($attributes as $attribute) {
-                /** @var Param $config */
-                $config = $attribute->newInstance();
-                $this->validateSingleParam($parameter, $config, $data);
-            }
+        foreach ($params as $item) {
+            $this->validateSingleParam($item, $data);
         }
     }
 
-    private function validateSingleParam(
-        ReflectionParameter $parameter,
-        Param $config,
-        array $data
-    ): void {
-        $name = $parameter->getName();
+    private function validateSingleParam(array $meta, array $data): void
+    {
+        $name = $meta['name'];
+        /** @var Param $config */
+        $config = $meta['config'];
         $value = $data[$name] ?? null;
-        if ($value === null && $parameter->isDefaultValueAvailable()) {
-            $value = $parameter->getDefaultValue();
+        if ($value === null && $meta['hasDefault']) {
+            $value = $meta['default'];
         }
 
         $rules = $config->rules;
@@ -123,5 +112,49 @@ final class ValidateMiddleware
             $routeParams = [];
         }
         return array_merge($request->all() ?: [], $routeParams);
+    }
+
+    private function getMethodMetadata(string $controller, string $action): ?array
+    {
+        $key = $controller . '::' . $action;
+        if (isset(self::$metadataCache[$key])) {
+            return self::$metadataCache[$key];
+        }
+
+        if (!method_exists($controller, $action)) {
+            return self::$metadataCache[$key] = null;
+        }
+
+        $method = new ReflectionMethod($controller, $action);
+
+        $methods = [];
+        foreach ($method->getAttributes(Validate::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
+            /** @var Validate $config */
+            $config = $attribute->newInstance();
+            $methods[] = $config;
+        }
+
+        $params = [];
+        foreach ($method->getParameters() as $parameter) {
+            foreach ($parameter->getAttributes(Param::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
+                /** @var Param $config */
+                $config = $attribute->newInstance();
+                $hasDefault = $parameter->isDefaultValueAvailable();
+                $params[] = [
+                    'name' => $parameter->getName(),
+                    'config' => $config,
+                    'hasDefault' => $hasDefault,
+                    'default' => $hasDefault ? $parameter->getDefaultValue() : null,
+                ];
+            }
+        }
+
+        $metadata = [
+            'has' => $methods !== [] || $params !== [],
+            'methods' => $methods,
+            'params' => $params,
+        ];
+
+        return self::$metadataCache[$key] = $metadata;
     }
 }
