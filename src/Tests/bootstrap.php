@@ -15,6 +15,7 @@ if (!function_exists('validation_test_set_config')) {
                     'validation' => [
                         'app' => [
                             'enable' => true,
+                            'exception' => \support\validation\ValidationException::class,
                         ],
                     ],
                 ],

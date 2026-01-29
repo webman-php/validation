@@ -48,7 +48,13 @@ final class ValidateMiddleware
             if (!$rules) {
                 continue;
             }
-            Validator::make($data, $rules, $messages, $attributesMap)->validate();
+            Validator::make(
+                $data,
+                $rules,
+                $messages,
+                $attributesMap,
+                $config->exception
+            )->validate();
         }
     }
 
@@ -80,7 +86,8 @@ final class ValidateMiddleware
             [$name => $value],
             [$name => $rules],
             $config->messages,
-            $attributes
+            $attributes,
+            $config->exception
         )->validate();
     }
 

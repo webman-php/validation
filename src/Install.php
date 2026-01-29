@@ -8,9 +8,9 @@ class Install
     /**
      * @var array
      */
-    protected static $pathRelation = array (
-  'config/plugin/webman/validation' => 'config/plugin/webman/validation',
-);
+    protected static array $pathRelation = [
+       'config/plugin/webman/validation' => 'config/plugin/webman/validation',
+    ];
 
     /**
      * Install

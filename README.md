@@ -15,7 +15,7 @@ composer require webman/validation
 - **Rule Set Reuse**: Provides `rules`, `messages`, and `attributes` through `ValidationSetInterface`, which can be reused in manual and annotation validation.
 - **Method-Level Validation**: Use `#[Validate]` to bind to controller methods.
 - **Parameter-Level Validation**: Use `#[Param]` to bind to controller method parameters.
-- **Exception Handling**: Throws `support\validation\ValidationException` on validation failure.
+- **Exception Handling**: Throws `support\validation\ValidationException` on validation failure; the exception class is configurable via config or annotation arguments.
 
 ## Manual Validation
 

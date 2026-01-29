@@ -16,7 +16,7 @@ composer require webman/validation
 - **规则集复用**：通过 `ValidationSetInterface` 提供 `rules` `messages` `attributes`，可在手动与注解中复用。
 - **方法级验证**：使用 `#[Validate]` 绑定控制器方法。
 - **参数级验证**：使用 `#[Param]` 绑定控制器方法参数。
-- **异常处理**：验证失败抛出 `support\validation\ValidationException`
+- **异常处理**：验证失败抛出 `support\validation\ValidationException`，异常类可通过配置或注解参数自定义
 
 ## 手动验证
 

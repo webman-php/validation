@@ -11,10 +11,11 @@ class Validator
         array $data,
         array $rules,
         array $messages = [],
-        array $attributes = []
+        array $attributes = [],
+        ?string $exceptionClass = null
     ): ValidationResult {
         $factory = ValidationFactory::getFactory();
         $validator = $factory->make($data, $rules, $messages, $attributes);
-        return new ValidationResult($validator);
+        return new ValidationResult($validator, $exceptionClass);
     }
 }

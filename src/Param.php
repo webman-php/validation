@@ -11,7 +11,8 @@ class Param
     public function __construct(
         public string|array $rules = '',
         public array $messages = [],
-        public string $attribute = ''
+        public string $attribute = '',
+        public ?string $exception = null
     ) {
     }
 }

@@ -6,6 +6,7 @@ namespace Webman\Validation\Tests;
 use PHPUnit\Framework\TestCase;
 use support\validation\Validator;
 use support\validation\ValidationException;
+use Webman\Validation\Exceptions\ValidationException as BaseValidationException;
 
 final class ValidationResultTest extends TestCase
 {
@@ -35,4 +36,40 @@ final class ValidationResultTest extends TestCase
             $this->assertSame('Email invalid', $exception->first());
         }
     }
+
+    public function testValidateFailUsesConfigException(): void
+    {
+        $this->setValidationExceptionConfig(ConfigValidationException::class);
+
+        try {
+            Validator::make(
+                ['email' => 'not-an-email'],
+                ['email' => 'required|email']
+            )->validate();
+            $this->fail('Expected ConfigValidationException was not thrown.');
+        } catch (ConfigValidationException $exception) {
+            $this->assertSame('The email field must be a valid email address.', $exception->getMessage());
+        } finally {
+            $this->setValidationExceptionConfig(ValidationException::class);
+        }
+    }
+
+    private function setValidationExceptionConfig(string $exceptionClass): void
+    {
+        validation_test_set_config([
+            'plugin' => [
+                'webman' => [
+                    'validation' => [
+                        'app' => [
+                            'exception' => $exceptionClass,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
+    }
+}
+
+final class ConfigValidationException extends BaseValidationException
+{
 }

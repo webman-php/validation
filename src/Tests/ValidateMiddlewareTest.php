@@ -7,6 +7,7 @@ use PHPUnit\Framework\TestCase;
 use Webman\Http\Request;
 use Webman\Route\Route;
 use support\validation\ValidationException;
+use Webman\Validation\Exceptions\ValidationException as BaseValidationException;
 use Webman\Validation\Middleware\ValidateMiddleware;
 use support\validation\Param;
 use support\validation\Validate;
@@ -119,6 +120,30 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Email Address is invalid');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testMethodValidationUsesCustomException(): void
+    {
+        $request = $this->makeRequest(
+            controller: MethodCustomExceptionController::class,
+            action: 'send',
+            query: ['email' => 'bad-email']
+        );
+
+        $this->expectException(CustomValidationException::class);
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testParamValidationUsesCustomException(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamCustomExceptionController::class,
+            action: 'send',
+            routeParams: ['id' => 'not-int']
+        );
+
+        $this->expectException(CustomValidationException::class);
         (new ValidateMiddleware())->process($request, fn () => 'ok');
     }
 
@@ -244,6 +269,29 @@ final class ParamMessageController
     }
 }
 
+final class MethodCustomExceptionController
+{
+    #[Validate(
+        rules: ['email' => 'required|email'],
+        exception: CustomValidationException::class
+    )]
+    public function send(Request $request): void
+    {
+    }
+}
+
+final class ParamCustomExceptionController
+{
+    public function send(
+        #[Param(
+            rules: 'required|integer',
+            exception: CustomValidationException::class
+        )]
+        int $id
+    ): void {
+    }
+}
+
 final class MixedController
 {
     #[Validate(rules: ['token' => 'required|string'])]
@@ -255,4 +303,8 @@ final class MixedController
         int $id
     ): void {
     }
+}
+
+final class CustomValidationException extends BaseValidationException
+{
 }
