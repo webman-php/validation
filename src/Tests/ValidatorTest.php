@@ -51,6 +51,15 @@ final class ValidatorTest extends TestCase
         }
     }
 
+    public function testCustomValidatorWithoutScenesUsesAllRulesByDefault(): void
+    {
+        $validated = UserValidatorWithoutScenes::make([
+            'email' => 'user@example.com',
+        ])->validate();
+
+        $this->assertSame(['email' => 'user@example.com'], $validated);
+    }
+
     private function setValidationExceptionConfig(string $exceptionClass): void
     {
         validation_test_set_config([
@@ -69,5 +78,12 @@ final class ValidatorTest extends TestCase
 
 final class ConfigValidationException extends BaseValidationException
 {
+}
+
+final class UserValidatorWithoutScenes extends Validator
+{
+    protected array $rules = [
+        'email' => 'required|email',
+    ];
 }
 

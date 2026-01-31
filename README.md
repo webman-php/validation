@@ -13,8 +13,8 @@ composer require webman/validation
 ## Basic Concepts
 
 - **Rule Set Reuse**: Define reusable `rules`, `messages`, `attributes`, and `scenes` by extending `support\validation\Validator`, which can be reused in manual and annotation validation.
-- **Method-Level Validation**: Use `#[Validate]` to bind to controller methods.
-- **Parameter-Level Validation**: Use `#[Param]` to bind to controller method parameters.
+- **Annotation (Attribute) Validation - Method-Level**: Use the PHP 8 attribute `#[Validate]` to bind validation to controller methods.
+- **Annotation (Attribute) Validation - Parameter-Level**: Use the PHP 8 attribute `#[Param]` to bind validation to controller method parameters.
 - **Exception Handling**: Throws `support\validation\ValidationException` on validation failure; the exception class is configurable via config.
 - **Database Validation**: If database validation is involved, you need to install `composer require webman/database`.
 
@@ -96,11 +96,6 @@ class UserValidator extends Validator
         'name' => 'Name',
         'email' => 'Email',
     ];
-
-    protected array $scenes = [
-        'create' => ['name', 'email'],
-        'update' => ['id', 'name', 'email'],
-    ];
 }
 ```
 
@@ -109,6 +104,40 @@ class UserValidator extends Validator
 ```php
 use app\validation\UserValidator;
 
+UserValidator::make($data)->validate();
+```
+
+### Use Scenes (Optional)
+
+Scenes are optional. They are only used when you call `withScene(...)` to validate a subset of fields.
+
+```php
+namespace app\validation;
+
+use support\validation\Validator;
+
+class UserValidator extends Validator
+{
+    protected array $rules = [
+        'id' => 'required|integer|min:1',
+        'name' => 'required|string|min:2|max:20',
+        'email' => 'required|email',
+    ];
+
+    protected array $scenes = [
+        'create' => ['name', 'email'],
+        'update' => ['id', 'name', 'email'],
+    ];
+}
+```
+
+```php
+use app\validation\UserValidator;
+
+// No scene specified -> validate all rules
+UserValidator::make($data)->validate();
+
+// Specify scene -> validate only fields in that scene
 UserValidator::make($data)->withScene('create')->validate();
 ```
 

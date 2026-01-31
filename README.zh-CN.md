@@ -14,8 +14,8 @@ composer require webman/validation
 ## 基本概念
 
 - **规则集复用**：通过继承 `support\validation\Validator` 定义可复用的 `rules` `messages` `attributes` `scenes`，可在手动与注解中复用。
-- **方法级验证**：使用 `#[Validate]` 绑定控制器方法。
-- **参数级验证**：使用 `#[Param]` 绑定控制器方法参数。
+- **方法级注解（Attribute）验证**：使用 PHP 8 属性注解 `#[Validate]` 绑定控制器方法。
+- **参数级注解（Attribute）验证**：使用 PHP 8 属性注解 `#[Param]` 绑定控制器方法参数。
 - **异常处理**：验证失败抛出 `support\validation\ValidationException`，异常类可通过配置自定义
 - **数据库验证**：如果涉及数据库验证，需要安装 `composer require webman/database` 
 
@@ -97,11 +97,6 @@ class UserValidator extends Validator
         'name' => '姓名',
         'email' => '邮箱',
     ];
-
-    protected array $scenes = [
-        'create' => ['name', 'email'],
-        'update' => ['id', 'name', 'email'],
-    ];
 }
 ```
 
@@ -110,6 +105,40 @@ class UserValidator extends Validator
 ```php
 use app\validation\UserValidator;
 
+UserValidator::make($data)->validate();
+```
+
+### 使用 scenes（可选）
+
+`scenes` 是可选能力，只有在你调用 `withScene(...)` 时，才会按场景只验证部分字段。
+
+```php
+namespace app\validation;
+
+use support\validation\Validator;
+
+class UserValidator extends Validator
+{
+    protected array $rules = [
+        'id' => 'required|integer|min:1',
+        'name' => 'required|string|min:2|max:20',
+        'email' => 'required|email',
+    ];
+
+    protected array $scenes = [
+        'create' => ['name', 'email'],
+        'update' => ['id', 'name', 'email'],
+    ];
+}
+```
+
+```php
+use app\validation\UserValidator;
+
+// 不指定场景 -> 验证全部规则
+UserValidator::make($data)->validate();
+
+// 指定场景 -> 只验证该场景包含的字段
 UserValidator::make($data)->withScene('create')->validate();
 ```
 
