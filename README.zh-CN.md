@@ -53,7 +53,7 @@ Validator::make(
 
 ### 不抛异常并获取错误信息
 
-如果你不希望抛异常，可以使用 `fails()` / `passes()` 判断，并通过 `errors()`（返回 `MessageBag`）获取错误信息：
+如果你不希望抛异常，可以使用 `fails()` 判断，并通过 `errors()`（返回 `MessageBag`）获取错误信息：
 
 ```php
 use support\validation\Validator;

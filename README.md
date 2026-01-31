@@ -52,7 +52,7 @@ Validator::make(
 
 ### Validate Without Exceptions (Get Error Messages)
 
-If you don't want exceptions, use `fails()` / `passes()` and read errors from the `MessageBag`:
+If you don't want exceptions, use `fails()` and read errors from the `MessageBag`:
 
 ```php
 use support\validation\Validator;
