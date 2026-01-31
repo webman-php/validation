@@ -36,8 +36,8 @@ class Validator
     protected array $attributes = [];
     protected array $scenes = [];
 
-    private array $data = [];
-    private ?string $scene = null;
+    protected array $data = [];
+    protected ?string $scene = null;
     private ?IlluminateValidator $validator = null;
 
     public function withScene(string $scene): static
@@ -87,12 +87,52 @@ class Validator
 
         $factory = ValidationFactory::getFactory();
         $this->validator = $factory->make(
-            $this->data,
-            $this->resolveRules(),
-            $this->messages,
-            $this->attributes
+            $this->data(),
+            $this->rules(),
+            $this->messages(),
+            $this->attributes()
         );
         return $this->validator;
+    }
+
+    /**
+     * Override this in subclasses to build validation rules dynamically.
+     */
+    public function rules(): array
+    {
+        return $this->resolveRules();
+    }
+
+    /**
+     * Override this in subclasses to build custom messages dynamically.
+     */
+    public function messages(): array
+    {
+        return $this->messages;
+    }
+
+    /**
+     * Override this in subclasses to build custom attribute names dynamically.
+     */
+    public function attributes(): array
+    {
+        return $this->attributes;
+    }
+
+    /**
+     * Expose incoming validation data for subclasses.
+     */
+    public function data(): array
+    {
+        return $this->data;
+    }
+
+    /**
+     * Expose current scene for subclasses.
+     */
+    protected function scene(): ?string
+    {
+        return $this->scene;
     }
 
     public function __call(string $name, array $arguments): mixed
