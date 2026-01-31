@@ -8,20 +8,19 @@ use support\validation\Validator;
 use support\validation\ValidationException;
 use Webman\Validation\Exceptions\ValidationException as BaseValidationException;
 
-final class ValidationResultTest extends TestCase
+final class ValidatorTest extends TestCase
 {
-    public function testValidatePass(): void
+    public function testValidatePassReturnsValidatedData(): void
     {
-        $result = Validator::make(
+        $validated = Validator::make(
             ['email' => 'user@example.com'],
             ['email' => 'required|email']
-        );
+        )->validate();
 
-        $validated = $result->validate();
         $this->assertSame(['email' => 'user@example.com'], $validated);
     }
 
-    public function testValidateFailThrowsException(): void
+    public function testValidateFailThrowsConfiguredExceptionWithFirstMessage(): void
     {
         try {
             Validator::make(
@@ -32,12 +31,10 @@ final class ValidationResultTest extends TestCase
             $this->fail('Expected ValidationException was not thrown.');
         } catch (ValidationException $exception) {
             $this->assertSame('Email invalid', $exception->getMessage());
-            $this->assertSame(['email' => ['Email invalid']], $exception->errors());
-            $this->assertSame('Email invalid', $exception->first());
         }
     }
 
-    public function testValidateFailUsesConfigException(): void
+    public function testValidateFailUsesConfigExceptionClass(): void
     {
         $this->setValidationExceptionConfig(ConfigValidationException::class);
 
@@ -73,3 +70,4 @@ final class ValidationResultTest extends TestCase
 final class ConfigValidationException extends BaseValidationException
 {
 }
+

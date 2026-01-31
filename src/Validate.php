@@ -13,8 +13,7 @@ class Validate
         public array $messages = [],
         public array $attributes = [],
         public ?string $validator = null,
-        public string $scene = 'default',
-        public ?string $exception = null
+        public ?string $scene = null
     ) {
     }
 }

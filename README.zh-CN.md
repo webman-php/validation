@@ -24,86 +24,66 @@ composer require webman/validation
 ### 基本用法
 
 ```php
-use support\validation\Validator;
+use support\validation\Rule;
 
 $data = ['email' => 'user@example.com'];
 
-Validator::make($data, [
+Rule::make([
     'email' => 'required|email',
-])->validate();
+])->validate($data);
 ```
 
 ### 自定义 messages 与 attributes
 
 ```php
-use support\validation\Validator;
+use support\validation\Rule;
 
-Validator::make(
-    $data,
+Rule::make(
     ['contact' => 'required|email'],
     ['contact.email' => '邮箱格式不正确'],
     ['contact' => '邮箱']
-)->validate();
+)->validate($data);
 ```
 
-## 规则集复用（ValidationSetInterface）
+## 规则集复用（RuleBase）
 
 ```php
 namespace app\validation;
 
-use support\validation\ValidationSetInterface;
+use support\validation\RuleBase;
 
-class UserRules implements ValidationSetInterface
+class UserRules extends RuleBase
 {
-    public static function rules(string $scene = 'default'): array
-    {
-        return match ($scene) {
-            'create' => [
-                'name' => 'required|string|min:2|max:20',
-                'email' => 'required|email',
-            ],
-            'update' => [
-                'id' => 'required|integer|min:1',
-                'name' => 'sometimes|string|min:2|max:20',
-                'email' => 'sometimes|email',
-            ],
-            default => [
-                'name' => 'required|string|min:2|max:20',
-            ],
-        };
-    }
+    protected array $rules = [
+        'id' => 'required|integer|min:1',
+        'name' => 'required|string|min:2|max:20',
+        'email' => 'required|email',
+    ];
 
-    public static function messages(string $scene = 'default'): array
-    {
-        return [
-            'name.required' => '姓名必填',
-            'email.required' => '邮箱必填',
-            'email.email' => '邮箱格式不正确',
-        ];
-    }
+    protected array $messages = [
+        'name.required' => '姓名必填',
+        'email.required' => '邮箱必填',
+        'email.email' => '邮箱格式不正确',
+    ];
 
-    public static function attributes(string $scene = 'default'): array
-    {
-        return [
-            'name' => '姓名',
-            'email' => '邮箱',
-        ];
-    }
+    protected array $attributes = [
+        'name' => '姓名',
+        'email' => '邮箱',
+    ];
+
+    protected array $scenes = [
+        'create' => ['name', 'email'],
+        'update' => ['id', 'name', 'email'],
+    ];
 }
 ```
 
 ### 手动验证复用
 
 ```php
-use support\validation\Validator;
 use app\validation\UserRules;
 
-Validator::make(
-    $data,
-    UserRules::rules('create'),
-    UserRules::messages('create'),
-    UserRules::attributes('create')
-)->validate();
+UserRules::scene('create')->validate($data);
 ```
 
 ## 注解验证（方法级）
@@ -1012,7 +992,7 @@ Validator::make($data, [
 验证字段必须匹配指定字符编码。该规则使用 `mb_check_encoding` 检测文件或字符串编码。可配合文件规则构造器使用：
 
 ```php
-use support\validation\Rules\File;
+use Illuminate\Validation\Rules\File;
 use support\validation\Validator;
 
 Validator::make($data, [

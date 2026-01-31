@@ -3,15 +3,16 @@ declare(strict_types=1);
 
 namespace Webman\Validation\Tests;
 
+use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Webman\Http\Request;
 use Webman\Route\Route;
-use support\validation\ValidationException;
 use Webman\Validation\Exceptions\ValidationException as BaseValidationException;
 use Webman\Validation\Middleware\ValidateMiddleware;
 use support\validation\Param;
 use support\validation\Validate;
-use support\validation\ValidationSetInterface;
+use support\validation\ValidationException;
+use support\validation\Validator;
 
 final class ValidateMiddlewareTest extends TestCase
 {
@@ -24,8 +25,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        $middleware = new ValidateMiddleware();
-        $middleware->process($request, function () use (&$called) {
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -46,7 +46,7 @@ final class ValidateMiddlewareTest extends TestCase
         (new ValidateMiddleware())->process($request, fn () => 'ok');
     }
 
-    public function testMethodValidateValidatorScene(): void
+    public function testMethodValidateValidatorWithScenePass(): void
     {
         $request = $this->makeRequest(
             controller: MethodSceneController::class,
@@ -61,6 +61,49 @@ final class ValidateMiddlewareTest extends TestCase
         });
 
         $this->assertTrue($called);
+    }
+
+    public function testMethodValidateValidatorWithoutScenePass(): void
+    {
+        $request = $this->makeRequest(
+            controller: MethodValidatorNoSceneController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'email' => 'user@example.com']
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testMethodValidateValidatorSceneNotDefinedThrows(): void
+    {
+        $request = $this->makeRequest(
+            controller: MethodSceneNotDefinedController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'email' => 'user@example.com']
+        );
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Validation scene not defined: missing');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testValidateAttributeCannotSetBothValidatorAndRules(): void
+    {
+        $request = $this->makeRequest(
+            controller: MethodValidatorAndRulesController::class,
+            action: 'send',
+            query: ['email' => 'user@example.com']
+        );
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Validate cannot set both validator and rules.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
     }
 
     public function testMultipleMethodValidation(): void
@@ -110,6 +153,22 @@ final class ValidateMiddlewareTest extends TestCase
         (new ValidateMiddleware())->process($request, fn () => 'ok');
     }
 
+    public function testParamValidationUsesDefaultValueWhenMissing(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamDefaultController::class,
+            action: 'send'
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
     public function testParamValidationCustomAttributesMessage(): void
     {
         $request = $this->makeRequest(
@@ -123,28 +182,42 @@ final class ValidateMiddlewareTest extends TestCase
         (new ValidateMiddleware())->process($request, fn () => 'ok');
     }
 
-    public function testMethodValidationUsesCustomException(): void
+    public function testValidationUsesConfiguredExceptionClass(): void
     {
-        $request = $this->makeRequest(
-            controller: MethodCustomExceptionController::class,
-            action: 'send',
-            query: ['email' => 'bad-email']
-        );
+        validation_test_set_config([
+            'plugin' => [
+                'webman' => [
+                    'validation' => [
+                        'app' => [
+                            'exception' => CustomValidationException::class,
+                        ],
+                    ],
+                ],
+            ],
+        ]);
 
-        $this->expectException(CustomValidationException::class);
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
-    }
+        try {
+            $request = $this->makeRequest(
+                controller: MethodRulesController::class,
+                action: 'send',
+                query: ['email' => 'bad-email']
+            );
 
-    public function testParamValidationUsesCustomException(): void
-    {
-        $request = $this->makeRequest(
-            controller: ParamCustomExceptionController::class,
-            action: 'send',
-            routeParams: ['id' => 'not-int']
-        );
-
-        $this->expectException(CustomValidationException::class);
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+            $this->expectException(CustomValidationException::class);
+            (new ValidateMiddleware())->process($request, fn () => 'ok');
+        } finally {
+            validation_test_set_config([
+                'plugin' => [
+                    'webman' => [
+                        'validation' => [
+                            'app' => [
+                                'exception' => \support\validation\ValidationException::class,
+                            ],
+                        ],
+                    ],
+                ],
+            ]);
+        }
     }
 
     public function testMixedMethodAndParamValidation(): void
@@ -206,30 +279,45 @@ final class MethodRulesController
     }
 }
 
-final class MethodSceneRules implements ValidationSetInterface
+final class MethodSceneValidator extends Validator
 {
-    public static function rules(string $scene = 'default'): array
-    {
-        return [
-            'name' => 'required|string|min:2',
-            'email' => 'required|email',
-        ];
-    }
+    protected array $rules = [
+        'name' => 'required|string|min:2',
+        'email' => 'required|email',
+    ];
 
-    public static function messages(string $scene = 'default'): array
-    {
-        return [];
-    }
-
-    public static function attributes(string $scene = 'default'): array
-    {
-        return [];
-    }
+    protected array $scenes = [
+        'create' => ['name', 'email'],
+    ];
 }
 
 final class MethodSceneController
 {
-    #[Validate(validator: MethodSceneRules::class, scene: 'create')]
+    #[Validate(validator: MethodSceneValidator::class, scene: 'create')]
+    public function send(Request $request): void
+    {
+    }
+}
+
+final class MethodValidatorNoSceneController
+{
+    #[Validate(validator: MethodSceneValidator::class)]
+    public function send(Request $request): void
+    {
+    }
+}
+
+final class MethodSceneNotDefinedController
+{
+    #[Validate(validator: MethodSceneValidator::class, scene: 'missing')]
+    public function send(Request $request): void
+    {
+    }
+}
+
+final class MethodValidatorAndRulesController
+{
+    #[Validate(validator: MethodSceneValidator::class, rules: ['email' => 'required|email'])]
     public function send(Request $request): void
     {
     }
@@ -256,6 +344,15 @@ final class ParamController
     }
 }
 
+final class ParamDefaultController
+{
+    public function send(
+        #[Param(rules: 'required|string')]
+        string $token = 'default-token'
+    ): void {
+    }
+}
+
 final class ParamMessageController
 {
     public function send(
@@ -265,29 +362,6 @@ final class ParamMessageController
             attribute: 'Email Address'
         )]
         string $email
-    ): void {
-    }
-}
-
-final class MethodCustomExceptionController
-{
-    #[Validate(
-        rules: ['email' => 'required|email'],
-        exception: CustomValidationException::class
-    )]
-    public function send(Request $request): void
-    {
-    }
-}
-
-final class ParamCustomExceptionController
-{
-    public function send(
-        #[Param(
-            rules: 'required|integer',
-            exception: CustomValidationException::class
-        )]
-        int $id
     ): void {
     }
 }

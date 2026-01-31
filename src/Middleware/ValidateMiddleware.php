@@ -9,7 +9,6 @@ use ReflectionParameter;
 use Webman\Http\Request;
 use Webman\Validation\Param;
 use Webman\Validation\Validate;
-use Webman\Validation\ValidationSetInterface;
 use Webman\Validation\Validator;
 
 final class ValidateMiddleware
@@ -44,17 +43,7 @@ final class ValidateMiddleware
         }
 
         foreach ($methods as $config) {
-            [$rules, $messages, $attributesMap] = $this->resolveMethodRules($config);
-            if (!$rules) {
-                continue;
-            }
-            Validator::make(
-                $data,
-                $rules,
-                $messages,
-                $attributesMap,
-                $config->exception
-            )->validate();
+            $this->validateMethod($config, $data);
         }
     }
 
@@ -63,6 +52,34 @@ final class ValidateMiddleware
         foreach ($params as $item) {
             $this->validateSingleParam($item, $data);
         }
+    }
+
+    private function validateMethod(Validate $config, array $data): void
+    {
+        if ($config->validator !== null) {
+            if ($config->rules !== []) {
+                throw new InvalidArgumentException('Validate cannot set both validator and rules.');
+            }
+            if (!class_exists($config->validator)) {
+                throw new InvalidArgumentException("Validator class not found: {$config->validator}");
+            }
+            if (!is_subclass_of($config->validator, \Webman\Validation\Validator::class)) {
+                throw new InvalidArgumentException("Validator must extend Webman\\Validation\\Validator (or support\\validation\\Validator): {$config->validator}");
+            }
+
+            $validator = $config->validator::make($data);
+            if ($config->scene !== null) {
+                $validator = $validator->withScene($config->scene);
+            }
+            $validator->validate();
+            return;
+        }
+
+        if ($config->rules === []) {
+            return;
+        }
+
+        Validator::make($data, $config->rules, $config->messages, $config->attributes)->validate();
     }
 
     private function validateSingleParam(array $meta, array $data): void
@@ -86,30 +103,8 @@ final class ValidateMiddleware
             [$name => $value],
             [$name => $rules],
             $config->messages,
-            $attributes,
-            $config->exception
+            $attributes
         )->validate();
-    }
-
-    private function resolveMethodRules(Validate $config): array
-    {
-        if ($config->validator !== null) {
-            if ($config->rules) {
-                throw new InvalidArgumentException('Validate cannot set both validator and rules.');
-            }
-            if (!class_exists($config->validator)) {
-                throw new InvalidArgumentException("Validator class not found: {$config->validator}");
-            }
-            if (!is_subclass_of($config->validator, ValidationSetInterface::class)) {
-                throw new InvalidArgumentException("Validator must implement ValidationSetInterface: {$config->validator}");
-            }
-            $rules = $config->validator::rules($config->scene);
-            $messages = $config->validator::messages($config->scene);
-            $attributes = $config->validator::attributes($config->scene);
-            return [$rules, $messages, $attributes];
-        }
-
-        return [$config->rules, $config->messages, $config->attributes];
     }
 
     private function getRequestData(Request $request): array

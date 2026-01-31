@@ -23,86 +23,66 @@ composer require webman/validation
 ### Basic Usage
 
 ```php
-use support\validation\Validator;
+use support\validation\Rule;
 
 $data = ['email' => 'user@example.com'];
 
-Validator::make($data, [
+Rule::make([
     'email' => 'required|email',
-])->validate();
+])->validate($data);
 ```
 
 ### Custom Messages and Attributes
 
 ```php
-use support\validation\Validator;
+use support\validation\Rule;
 
-Validator::make(
-    $data,
+Rule::make(
     ['contact' => 'required|email'],
     ['contact.email' => 'Invalid email format'],
     ['contact' => 'Email']
-)->validate();
+)->validate($data);
 ```
 
-## Rule Set Reuse (ValidationSetInterface)
+## Rule Set Reuse (RuleBase)
 
 ```php
 namespace app\validation;
 
-use support\validation\ValidationSetInterface;
+use support\validation\RuleBase;
 
-class UserRules implements ValidationSetInterface
+class UserRules extends RuleBase
 {
-    public static function rules(string $scene = 'default'): array
-    {
-        return match ($scene) {
-            'create' => [
-                'name' => 'required|string|min:2|max:20',
-                'email' => 'required|email',
-            ],
-            'update' => [
-                'id' => 'required|integer|min:1',
-                'name' => 'sometimes|string|min:2|max:20',
-                'email' => 'sometimes|email',
-            ],
-            default => [
-                'name' => 'required|string|min:2|max:20',
-            ],
-        };
-    }
+    protected array $rules = [
+        'id' => 'required|integer|min:1',
+        'name' => 'required|string|min:2|max:20',
+        'email' => 'required|email',
+    ];
 
-    public static function messages(string $scene = 'default'): array
-    {
-        return [
-            'name.required' => 'Name is required',
-            'email.required' => 'Email is required',
-            'email.email' => 'Invalid email format',
-        ];
-    }
+    protected array $messages = [
+        'name.required' => 'Name is required',
+        'email.required' => 'Email is required',
+        'email.email' => 'Invalid email format',
+    ];
 
-    public static function attributes(string $scene = 'default'): array
-    {
-        return [
-            'name' => 'Name',
-            'email' => 'Email',
-        ];
-    }
+    protected array $attributes = [
+        'name' => 'Name',
+        'email' => 'Email',
+    ];
+
+    protected array $scenes = [
+        'create' => ['name', 'email'],
+        'update' => ['id', 'name', 'email'],
+    ];
 }
 ```
 
 ### Manual Validation Reuse
 
 ```php
-use support\validation\Validator;
 use app\validation\UserRules;
 
-Validator::make(
-    $data,
-    UserRules::rules('create'),
-    UserRules::messages('create'),
-    UserRules::attributes('create')
-)->validate();
+UserRules::scene('create')->validate($data);
 ```
 
 ## Annotation Validation (Method-Level)
@@ -1011,7 +991,7 @@ Validator::make($data, [
 The field under validation must match the specified character encoding. This rule uses `mb_check_encoding` to detect the encoding of files or strings. It can be used with the file rule builder:
 
 ```php
-use support\validation\Rules\File;
+use Illuminate\Validation\Rules\File;
 use support\validation\Validator;
 
 Validator::make($data, [
