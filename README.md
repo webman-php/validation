@@ -12,10 +12,10 @@ composer require webman/validation
 
 ## Basic Concepts
 
-- **Rule Set Reuse**: Provides `rules`, `messages`, and `attributes` through `ValidationSetInterface`, which can be reused in manual and annotation validation.
+- **Rule Set Reuse**: Define reusable `rules`, `messages`, `attributes`, and `scenes` by extending `support\validation\Validator`, which can be reused in manual and annotation validation.
 - **Method-Level Validation**: Use `#[Validate]` to bind to controller methods.
 - **Parameter-Level Validation**: Use `#[Param]` to bind to controller method parameters.
-- **Exception Handling**: Throws `support\validation\ValidationException` on validation failure; the exception class is configurable via config or annotation arguments.
+- **Exception Handling**: Throws `support\validation\ValidationException` on validation failure; the exception class is configurable via config.
 - **Database Validation**: If database validation is involved, you need to install `composer require webman/database`.
 
 ## Manual Validation
@@ -23,35 +23,62 @@ composer require webman/validation
 ### Basic Usage
 
 ```php
-use support\validation\Rule;
+use support\validation\Validator;
 
 $data = ['email' => 'user@example.com'];
 
-Rule::make([
+Validator::make($data, [
     'email' => 'required|email',
-])->validate($data);
+])->validate();
 ```
+
+> **Note**  
+> `validate()` will throw `support\validation\ValidationException` if validation fails. If you prefer not to throw exceptions, use `fails()` as shown below.
 
 ### Custom Messages and Attributes
 
 ```php
-use support\validation\Rule;
+use support\validation\Validator;
 
-Rule::make(
+$data = ['contact' => 'user@example.com'];
+
+Validator::make(
+    $data,
     ['contact' => 'required|email'],
     ['contact.email' => 'Invalid email format'],
     ['contact' => 'Email']
-)->validate($data);
+)->validate();
 ```
 
-## Rule Set Reuse (RuleBase)
+### Validate Without Exceptions (Get Error Messages)
+
+If you don't want exceptions, use `fails()` / `passes()` and read errors from the `MessageBag`:
+
+```php
+use support\validation\Validator;
+
+$data = ['email' => 'bad-email'];
+
+$validator = Validator::make($data, [
+    'email' => 'required|email',
+]);
+
+if ($validator->fails()) {
+    $firstError = $validator->errors()->first();   // string
+    $allErrors = $validator->errors()->all();      // array
+    $errorsByField = $validator->errors()->toArray(); // array
+    // handle errors...
+}
+```
+
+## Rule Set Reuse (Custom Validator)
 
 ```php
 namespace app\validation;
 
-use support\validation\RuleBase;
+use support\validation\Validator;
 
-class UserRules extends RuleBase
+class UserValidator extends Validator
 {
     protected array $rules = [
         'id' => 'required|integer|min:1',
@@ -80,9 +107,9 @@ class UserRules extends RuleBase
 ### Manual Validation Reuse
 
 ```php
-use app\validation\UserRules;
+use app\validation\UserValidator;
 
-UserRules::scene('create')->validate($data);
+UserValidator::make($data)->withScene('create')->validate();
 ```
 
 ## Annotation Validation (Method-Level)
@@ -121,11 +148,11 @@ class AuthController
 ```php
 use support\Request;
 use support\validation\Validate;
-use app\validation\UserRules;
+use app\validation\UserValidator;
 
 class UserController
 {
-    #[Validate(validator: UserRules::class, scene: 'create')]
+    #[Validate(validator: UserValidator::class, scene: 'create')]
     public function create(Request $request)
     {
         return json(['code' => 0, 'msg' => 'ok']);
@@ -255,8 +282,6 @@ Default response behavior is handled by `BusinessException::render()`:
 ### Customize with a custom exception
 
 - Global config: `exception` in `config/plugin/webman/validation/app.php`
-- Method-level override: `#[Validate(..., exception: MyValidateException::class)]`
-- Parameter-level override: `#[Param(..., exception: MyValidateException::class)]`
 
 ## Multi-Language Support
 

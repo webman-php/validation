@@ -13,10 +13,10 @@ composer require webman/validation
 
 ## 基本概念
 
-- **规则集复用**：通过 `ValidationSetInterface` 提供 `rules` `messages` `attributes`，可在手动与注解中复用。
+- **规则集复用**：通过继承 `support\validation\Validator` 定义可复用的 `rules` `messages` `attributes` `scenes`，可在手动与注解中复用。
 - **方法级验证**：使用 `#[Validate]` 绑定控制器方法。
 - **参数级验证**：使用 `#[Param]` 绑定控制器方法参数。
-- **异常处理**：验证失败抛出 `support\validation\ValidationException`，异常类可通过配置或注解参数自定义
+- **异常处理**：验证失败抛出 `support\validation\ValidationException`，异常类可通过配置自定义
 - **数据库验证**：如果涉及数据库验证，需要安装 `composer require webman/database` 
 
 ## 手动验证
@@ -24,35 +24,62 @@ composer require webman/validation
 ### 基本用法
 
 ```php
-use support\validation\Rule;
+use support\validation\Validator;
 
 $data = ['email' => 'user@example.com'];
 
-Rule::make([
+Validator::make($data, [
     'email' => 'required|email',
-])->validate($data);
+])->validate();
 ```
+
+> **提示**  
+> `validate()` 校验失败会抛出 `support\validation\ValidationException`。如果你不希望抛异常，请使用下方的 `fails()` 写法获取错误信息。
 
 ### 自定义 messages 与 attributes
 
 ```php
-use support\validation\Rule;
+use support\validation\Validator;
 
-Rule::make(
+$data = ['contact' => 'user@example.com'];
+
+Validator::make(
+    $data,
     ['contact' => 'required|email'],
     ['contact.email' => '邮箱格式不正确'],
     ['contact' => '邮箱']
-)->validate($data);
+)->validate();
 ```
 
-## 规则集复用（RuleBase）
+### 不抛异常并获取错误信息
+
+如果你不希望抛异常，可以使用 `fails()` / `passes()` 判断，并通过 `errors()`（返回 `MessageBag`）获取错误信息：
+
+```php
+use support\validation\Validator;
+
+$data = ['email' => 'bad-email'];
+
+$validator = Validator::make($data, [
+    'email' => 'required|email',
+]);
+
+if ($validator->fails()) {
+    $firstError = $validator->errors()->first();      // string
+    $allErrors = $validator->errors()->all();         // array
+    $errorsByField = $validator->errors()->toArray(); // array
+    // 处理错误...
+}
+```
+
+## 规则集复用（自定义 Validator）
 
 ```php
 namespace app\validation;
 
-use support\validation\RuleBase;
+use support\validation\Validator;
 
-class UserRules extends RuleBase
+class UserValidator extends Validator
 {
     protected array $rules = [
         'id' => 'required|integer|min:1',
@@ -81,9 +108,9 @@ class UserRules extends RuleBase
 ### 手动验证复用
 
 ```php
-use app\validation\UserRules;
+use app\validation\UserValidator;
 
-UserRules::scene('create')->validate($data);
+UserValidator::make($data)->withScene('create')->validate();
 ```
 
 ## 注解验证（方法级）
@@ -122,11 +149,11 @@ class AuthController
 ```php
 use support\Request;
 use support\validation\Validate;
-use app\validation\UserRules;
+use app\validation\UserValidator;
 
 class UserController
 {
-    #[Validate(validator: UserRules::class, scene: 'create')]
+    #[Validate(validator: UserValidator::class, scene: 'create')]
     public function create(Request $request)
     {
         return json(['code' => 0, 'msg' => 'ok']);
@@ -256,8 +283,6 @@ class UserController
 ### 通过自定义异常修改处理方式
 
 - 全局配置：`config/plugin/webman/validation/app.php` 的 `exception`
-- 方法级覆盖：`#[Validate(..., exception: MyValidateException::class)]`
-- 参数级覆盖：`#[Param(..., exception: MyValidateException::class)]`
 
 ## 多语言支持
 
