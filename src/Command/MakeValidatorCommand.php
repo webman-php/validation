@@ -40,10 +40,17 @@ final class MakeValidatorCommand extends Command
         $force = (bool)$input->getOption('force');
         $table = $input->getOption('table');
         $table = is_string($table) ? trim($table) : '';
+        // Some Symfony Console versions parse `-t=foo` as `=foo` for short options.
+        $table = ltrim($table, '=');
         $connectionName = $input->getOption('connection');
-        $connectionName = is_string($connectionName) && trim($connectionName) !== '' ? trim($connectionName) : null;
+        $connectionName = is_string($connectionName) ? trim($connectionName) : '';
+        // Some Symfony Console versions parse `-c=foo` as `=foo` for short options.
+        $connectionName = ltrim($connectionName, '=');
+        $connectionName = $connectionName !== '' ? $connectionName : null;
         $scenesOption = $input->getOption('scenes');
         $scenesOption = is_string($scenesOption) ? trim($scenesOption) : '';
+        // Some Symfony Console versions parse `-s=crud` as `=crud` for short options.
+        $scenesOption = ltrim($scenesOption, '=');
 
         [$namespace, $class, $file] = $this->resolveTarget($rawName);
 
