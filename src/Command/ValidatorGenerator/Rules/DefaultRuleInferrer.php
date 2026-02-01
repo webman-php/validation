@@ -70,7 +70,8 @@ final class DefaultRuleInferrer implements RuleInferrerInterface
 
         return [
             'create' => $nonPk,
-            'update' => $nonPk,
+            // Full update (PUT semantics) generally requires primary key + full payload.
+            'update' => array_values(array_merge($pk, $nonPk)),
             'delete' => $pk,
             'detail' => $pk,
         ];
