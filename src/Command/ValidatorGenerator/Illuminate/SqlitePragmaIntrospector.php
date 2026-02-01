@@ -3,14 +3,14 @@ declare(strict_types=1);
 
 namespace Webman\Validation\Command\ValidatorGenerator\Illuminate;
 
-use Illuminate\Database\ConnectionInterface;
+use Webman\Validation\Command\ValidatorGenerator\Contracts\SchemaConnectionInterface;
 use Webman\Validation\Command\ValidatorGenerator\Contracts\SchemaIntrospectorInterface;
 use Webman\Validation\Command\ValidatorGenerator\DTO\ColumnDefinition;
 use Webman\Validation\Command\ValidatorGenerator\DTO\TableDefinition;
 
 final class SqlitePragmaIntrospector implements SchemaIntrospectorInterface
 {
-    public function introspect(ConnectionInterface $connection, string $table): TableDefinition
+    public function introspect(SchemaConnectionInterface $connection, string $table): TableDefinition
     {
         $table = trim($table);
         if ($table === '') {
@@ -20,7 +20,6 @@ final class SqlitePragmaIntrospector implements SchemaIntrospectorInterface
             throw new \InvalidArgumentException("Invalid table name for SQLite: {$table}");
         }
 
-        /** @var array<int, object> $rows */
         $rows = $connection->select("PRAGMA table_info('{$table}')");
         if ($rows === []) {
             throw new \RuntimeException("Table not found or has no columns: {$table}");
@@ -30,16 +29,16 @@ final class SqlitePragmaIntrospector implements SchemaIntrospectorInterface
         $columns = [];
 
         foreach ($rows as $row) {
-            $name = (string)($row->name ?? '');
+            $name = (string)($row['name'] ?? '');
             if ($name === '') {
                 continue;
             }
 
-            $type = strtolower((string)($row->type ?? ''));
-            $notNull = (int)($row->notnull ?? 0) === 1;
+            $type = strtolower((string)($row['type'] ?? ''));
+            $notNull = (int)($row['notnull'] ?? 0) === 1;
             $nullable = !$notNull;
-            $defaultValue = $row->dflt_value ?? null;
-            $pk = (int)($row->pk ?? 0);
+            $defaultValue = $row['dflt_value'] ?? null;
+            $pk = (int)($row['pk'] ?? 0);
             if ($pk > 0) {
                 $primaryKeyColumns[] = $name;
             }

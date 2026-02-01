@@ -3,14 +3,14 @@ declare(strict_types=1);
 
 namespace Webman\Validation\Command\ValidatorGenerator\Illuminate;
 
-use Illuminate\Database\ConnectionInterface;
+use Webman\Validation\Command\ValidatorGenerator\Contracts\SchemaConnectionInterface;
 use Webman\Validation\Command\ValidatorGenerator\Contracts\SchemaIntrospectorInterface;
 use Webman\Validation\Command\ValidatorGenerator\DTO\ColumnDefinition;
 use Webman\Validation\Command\ValidatorGenerator\DTO\TableDefinition;
 
 final class PostgresInformationSchemaIntrospector implements SchemaIntrospectorInterface
 {
-    public function introspect(ConnectionInterface $connection, string $table): TableDefinition
+    public function introspect(SchemaConnectionInterface $connection, string $table): TableDefinition
     {
         $table = trim($table);
         if ($table === '') {
@@ -19,7 +19,6 @@ final class PostgresInformationSchemaIntrospector implements SchemaIntrospectorI
 
         [$schema, $tableName] = $this->splitSchemaTable($table);
 
-        /** @var array<int, object> $rows */
         $rows = $connection->select(
             "SELECT
                 c.column_name AS column_name,
@@ -41,7 +40,6 @@ final class PostgresInformationSchemaIntrospector implements SchemaIntrospectorI
             throw new \RuntimeException("Table not found or has no columns: {$schema}.{$tableName}");
         }
 
-        /** @var array<int, object> $pkRows */
         $pkRows = $connection->select(
             "SELECT kcu.column_name AS column_name
             FROM information_schema.table_constraints tc
@@ -57,14 +55,13 @@ final class PostgresInformationSchemaIntrospector implements SchemaIntrospectorI
         );
         $primaryKeyColumns = [];
         foreach ($pkRows as $pkRow) {
-            $pkName = (string)($pkRow->column_name ?? '');
+            $pkName = (string)($pkRow['column_name'] ?? '');
             if ($pkName !== '') {
                 $primaryKeyColumns[] = $pkName;
             }
         }
 
         // Fetch column comments (best-effort).
-        /** @var array<int, object> $commentRows */
         $commentRows = $connection->select(
             "SELECT
                 a.attname AS column_name,
@@ -80,9 +77,9 @@ final class PostgresInformationSchemaIntrospector implements SchemaIntrospectorI
         );
         $commentsByColumn = [];
         foreach ($commentRows as $cr) {
-            $cn = (string)($cr->column_name ?? '');
+            $cn = (string)($cr['column_name'] ?? '');
             if ($cn !== '') {
-                $commentsByColumn[$cn] = (string)($cr->column_comment ?? '');
+                $commentsByColumn[$cn] = (string)($cr['column_comment'] ?? '');
             }
         }
 
@@ -91,23 +88,23 @@ final class PostgresInformationSchemaIntrospector implements SchemaIntrospectorI
 
         $columns = [];
         foreach ($rows as $row) {
-            $name = (string)($row->column_name ?? '');
+            $name = (string)($row['column_name'] ?? '');
             if ($name === '') {
                 continue;
             }
 
-            $dataType = strtolower((string)($row->data_type ?? ''));
-            $udtName = strtolower((string)($row->udt_name ?? ''));
-            $nullable = strtoupper((string)($row->is_nullable ?? 'NO')) === 'YES';
-            $defaultValue = $row->column_default ?? null;
+            $dataType = strtolower((string)($row['data_type'] ?? ''));
+            $udtName = strtolower((string)($row['udt_name'] ?? ''));
+            $nullable = strtoupper((string)($row['is_nullable'] ?? 'NO')) === 'YES';
+            $defaultValue = $row['column_default'] ?? null;
 
-            $charLen = $row->character_maximum_length ?? null;
+            $charLen = $row['character_maximum_length'] ?? null;
             $characterMaximumLength = $charLen === null ? null : (int)$charLen;
 
-            $precision = $row->numeric_precision ?? null;
+            $precision = $row['numeric_precision'] ?? null;
             $numericPrecision = $precision === null ? null : (int)$precision;
 
-            $scale = $row->numeric_scale ?? null;
+            $scale = $row['numeric_scale'] ?? null;
             $numericScale = $scale === null ? null : (int)$scale;
 
             $autoIncrement = false;
@@ -161,9 +158,8 @@ final class PostgresInformationSchemaIntrospector implements SchemaIntrospectorI
     /**
      * @return array<string, list<string>> map udt_name => enum labels
      */
-    private function loadEnumValuesByType(ConnectionInterface $connection): array
+    private function loadEnumValuesByType(SchemaConnectionInterface $connection): array
     {
-        /** @var array<int, object> $rows */
         $rows = $connection->select(
             "SELECT
                 t.typname AS type_name,
@@ -175,8 +171,8 @@ final class PostgresInformationSchemaIntrospector implements SchemaIntrospectorI
 
         $map = [];
         foreach ($rows as $row) {
-            $type = strtolower((string)($row->type_name ?? ''));
-            $label = (string)($row->enum_label ?? '');
+            $type = strtolower((string)($row['type_name'] ?? ''));
+            $label = (string)($row['enum_label'] ?? '');
             if ($type === '' || $label === '') {
                 continue;
             }

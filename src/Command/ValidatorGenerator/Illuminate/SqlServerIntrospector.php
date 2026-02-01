@@ -3,14 +3,14 @@ declare(strict_types=1);
 
 namespace Webman\Validation\Command\ValidatorGenerator\Illuminate;
 
-use Illuminate\Database\ConnectionInterface;
+use Webman\Validation\Command\ValidatorGenerator\Contracts\SchemaConnectionInterface;
 use Webman\Validation\Command\ValidatorGenerator\Contracts\SchemaIntrospectorInterface;
 use Webman\Validation\Command\ValidatorGenerator\DTO\ColumnDefinition;
 use Webman\Validation\Command\ValidatorGenerator\DTO\TableDefinition;
 
 final class SqlServerIntrospector implements SchemaIntrospectorInterface
 {
-    public function introspect(ConnectionInterface $connection, string $table): TableDefinition
+    public function introspect(SchemaConnectionInterface $connection, string $table): TableDefinition
     {
         $table = trim($table);
         if ($table === '') {
@@ -19,7 +19,6 @@ final class SqlServerIntrospector implements SchemaIntrospectorInterface
 
         [$schema, $tableName] = $this->splitSchemaTable($table);
 
-        /** @var array<int, object> $rows */
         $rows = $connection->select(
             "SELECT
                 c.name AS column_name,
@@ -50,7 +49,6 @@ final class SqlServerIntrospector implements SchemaIntrospectorInterface
             throw new \RuntimeException("Table not found or has no columns: {$schema}.{$tableName}");
         }
 
-        /** @var array<int, object> $pkRows */
         $pkRows = $connection->select(
             "SELECT c.name AS column_name
             FROM sys.indexes i
@@ -66,7 +64,7 @@ final class SqlServerIntrospector implements SchemaIntrospectorInterface
         );
         $primaryKeyColumns = [];
         foreach ($pkRows as $pkRow) {
-            $pkName = (string)($pkRow->column_name ?? '');
+            $pkName = (string)($pkRow['column_name'] ?? '');
             if ($pkName !== '') {
                 $primaryKeyColumns[] = $pkName;
             }
@@ -74,26 +72,26 @@ final class SqlServerIntrospector implements SchemaIntrospectorInterface
 
         $columns = [];
         foreach ($rows as $row) {
-            $name = (string)($row->column_name ?? '');
+            $name = (string)($row['column_name'] ?? '');
             if ($name === '') {
                 continue;
             }
 
-            $dataType = strtolower((string)($row->data_type ?? ''));
-            $nullable = (int)($row->is_nullable ?? 0) === 1;
-            $defaultValue = $row->column_default ?? null;
+            $dataType = strtolower((string)($row['data_type'] ?? ''));
+            $nullable = (int)($row['is_nullable'] ?? 0) === 1;
+            $defaultValue = $row['column_default'] ?? null;
 
-            $charLen = $row->character_maximum_length ?? null;
+            $charLen = $row['character_maximum_length'] ?? null;
             $characterMaximumLength = $charLen === null ? null : (int)$charLen;
 
-            $precision = $row->numeric_precision ?? null;
+            $precision = $row['numeric_precision'] ?? null;
             $numericPrecision = $precision === null ? null : (int)$precision;
 
-            $scale = $row->numeric_scale ?? null;
+            $scale = $row['numeric_scale'] ?? null;
             $numericScale = $scale === null ? null : (int)$scale;
 
-            $autoIncrement = (int)($row->is_identity ?? 0) === 1;
-            $comment = is_string($row->column_comment ?? null) ? (string)$row->column_comment : '';
+            $autoIncrement = (int)($row['is_identity'] ?? 0) === 1;
+            $comment = is_string($row['column_comment'] ?? null) ? (string)$row['column_comment'] : '';
 
             $columns[] = new ColumnDefinition(
                 name: $name,

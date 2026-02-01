@@ -12,7 +12,9 @@ use Webman\Console\Util;
 use Webman\Validation\Command\ValidatorGenerator\Illuminate\IlluminateConnectionResolver;
 use Webman\Validation\Command\ValidatorGenerator\Rules\DefaultRuleInferrer;
 use Webman\Validation\Command\ValidatorGenerator\Support\ExcludedColumns;
+use Webman\Validation\Command\ValidatorGenerator\Support\OrmDetector;
 use Webman\Validation\Command\ValidatorGenerator\Support\SchemaIntrospectorFactory;
+use Webman\Validation\Command\ValidatorGenerator\ThinkOrm\ThinkOrmConnectionResolver;
 use Webman\Validation\Command\ValidatorGenerator\Support\ValidatorClassRenderer;
 use Webman\Validation\Command\ValidatorGenerator\Support\ValidatorFileWriter;
 
@@ -32,6 +34,7 @@ final class MakeValidatorCommand extends Command
         $this->addOption('table', 't', InputOption::VALUE_REQUIRED, 'Generate rules from database table (e.g. users)');
         $this->addOption('connection', 'c', InputOption::VALUE_REQUIRED, 'Database connection name');
         $this->addOption('scenes', 's', InputOption::VALUE_REQUIRED, 'Generate scenes (supported: crud)');
+        $this->addOption('orm', 'o', InputOption::VALUE_REQUIRED, 'ORM to use: auto|illuminate|thinkorm (default: auto)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -51,6 +54,13 @@ final class MakeValidatorCommand extends Command
         $scenesOption = is_string($scenesOption) ? trim($scenesOption) : '';
         // Some Symfony Console versions parse `-s=crud` as `=crud` for short options.
         $scenesOption = ltrim($scenesOption, '=');
+        $ormOption = $input->getOption('orm');
+        $ormOption = is_string($ormOption) ? trim($ormOption) : OrmDetector::ORM_AUTO;
+        // Some Symfony Console versions parse `-o=xxx` as `=xxx` for short options.
+        $ormOption = ltrim($ormOption, '=');
+        if ($ormOption === '') {
+            $ormOption = OrmDetector::ORM_AUTO;
+        }
 
         [$namespace, $class, $file] = $this->resolveTarget($rawName);
 
@@ -72,11 +82,19 @@ final class MakeValidatorCommand extends Command
 
         if ($table !== '') {
             try {
-                $resolver = new IlluminateConnectionResolver();
+                $detector = new OrmDetector();
+                $orm = $detector->resolve($ormOption);
+
+                $resolver = match ($orm) {
+                    OrmDetector::ORM_ILLUMINATE => new IlluminateConnectionResolver(),
+                    OrmDetector::ORM_THINKORM => new ThinkOrmConnectionResolver(),
+                    default => throw new \RuntimeException("Unsupported orm: {$orm}"),
+                };
+
                 $connection = $resolver->resolve($connectionName);
 
                 $factory = new SchemaIntrospectorFactory();
-                $introspector = $factory->createForDriver((string)$connection->getDriverName());
+                $introspector = $factory->createForDriver($connection->driverName());
 
                 $tableDef = $introspector->introspect($connection, $table);
 

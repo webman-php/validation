@@ -3,26 +3,25 @@ declare(strict_types=1);
 
 namespace Webman\Validation\Command\ValidatorGenerator\Illuminate;
 
-use Illuminate\Database\ConnectionInterface;
+use Webman\Validation\Command\ValidatorGenerator\Contracts\SchemaConnectionInterface;
 use Webman\Validation\Command\ValidatorGenerator\Contracts\SchemaIntrospectorInterface;
 use Webman\Validation\Command\ValidatorGenerator\DTO\ColumnDefinition;
 use Webman\Validation\Command\ValidatorGenerator\DTO\TableDefinition;
 
 final class MySqlInformationSchemaIntrospector implements SchemaIntrospectorInterface
 {
-    public function introspect(ConnectionInterface $connection, string $table): TableDefinition
+    public function introspect(SchemaConnectionInterface $connection, string $table): TableDefinition
     {
         $table = trim($table);
         if ($table === '') {
             throw new \InvalidArgumentException('Table name cannot be empty.');
         }
 
-        $database = (string)$connection->getDatabaseName();
-        if ($database === '') {
+        $database = $connection->databaseName();
+        if (!$database) {
             throw new \RuntimeException('Database name is empty for current connection.');
         }
 
-        /** @var array<int, object> $rows */
         $rows = $connection->select(
             "SELECT
                 COLUMN_NAME AS column_name,
@@ -46,7 +45,6 @@ final class MySqlInformationSchemaIntrospector implements SchemaIntrospectorInte
             throw new \RuntimeException("Table not found or has no columns: {$database}.{$table}");
         }
 
-        /** @var array<int, object> $pkRows */
         $pkRows = $connection->select(
             "SELECT
                 COLUMN_NAME AS column_name
@@ -59,7 +57,7 @@ final class MySqlInformationSchemaIntrospector implements SchemaIntrospectorInte
         );
         $primaryKeyColumns = [];
         foreach ($pkRows as $pkRow) {
-            $pkName = (string)($pkRow->column_name ?? '');
+            $pkName = (string)($pkRow['column_name'] ?? '');
             if ($pkName !== '') {
                 $primaryKeyColumns[] = $pkName;
             }
@@ -67,30 +65,30 @@ final class MySqlInformationSchemaIntrospector implements SchemaIntrospectorInte
 
         $columns = [];
         foreach ($rows as $row) {
-            $name = (string)($row->column_name ?? '');
+            $name = (string)($row['column_name'] ?? '');
             if ($name === '') {
                 continue;
             }
 
-            $dataType = strtolower((string)($row->data_type ?? ''));
-            $columnType = strtolower((string)($row->column_type ?? $dataType));
-            $nullable = strtoupper((string)($row->is_nullable ?? 'NO')) === 'YES';
-            $defaultValue = $row->column_default ?? null;
+            $dataType = strtolower((string)($row['data_type'] ?? ''));
+            $columnType = strtolower((string)($row['column_type'] ?? $dataType));
+            $nullable = strtoupper((string)($row['is_nullable'] ?? 'NO')) === 'YES';
+            $defaultValue = $row['column_default'] ?? null;
 
-            $charLen = $row->character_maximum_length ?? null;
+            $charLen = $row['character_maximum_length'] ?? null;
             $characterMaximumLength = $charLen === null ? null : (int)$charLen;
 
-            $precision = $row->numeric_precision ?? null;
+            $precision = $row['numeric_precision'] ?? null;
             $numericPrecision = $precision === null ? null : (int)$precision;
 
-            $scale = $row->numeric_scale ?? null;
+            $scale = $row['numeric_scale'] ?? null;
             $numericScale = $scale === null ? null : (int)$scale;
 
-            $extra = strtolower((string)($row->extra ?? ''));
+            $extra = strtolower((string)($row['extra'] ?? ''));
             $autoIncrement = str_contains($extra, 'auto_increment');
             $unsigned = str_contains($columnType, 'unsigned');
 
-            $comment = (string)($row->column_comment ?? '');
+            $comment = (string)($row['column_comment'] ?? '');
 
             $enumValues = $this->parseEnumValues($dataType, $columnType);
 

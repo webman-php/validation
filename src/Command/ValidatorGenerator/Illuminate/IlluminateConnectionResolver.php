@@ -5,10 +5,11 @@ namespace Webman\Validation\Command\ValidatorGenerator\Illuminate;
 
 use Illuminate\Database\ConnectionInterface;
 use Webman\Validation\Command\ValidatorGenerator\Contracts\ConnectionResolverInterface;
+use Webman\Validation\Command\ValidatorGenerator\Contracts\SchemaConnectionInterface;
 
 final class IlluminateConnectionResolver implements ConnectionResolverInterface
 {
-    public function resolve(?string $connectionName = null): ConnectionInterface
+    public function resolve(?string $connectionName = null): SchemaConnectionInterface
     {
         if (!class_exists(\support\Db::class)) {
             throw new \RuntimeException('Database support not found. Please install/enable webman/database plugin.');
@@ -40,7 +41,7 @@ final class IlluminateConnectionResolver implements ConnectionResolverInterface
 
         /** @var ConnectionInterface $connection */
         $connection = \support\Db::connection($name);
-        return $connection;
+        return new IlluminateSchemaConnection($connection);
     }
 }
 
