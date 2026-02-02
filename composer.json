@@ -6,7 +6,7 @@
   "require": {
     "illuminate/validation": "*",
     "illuminate/translation": "*",
-    "workerman/webman-framework": "^2.1"
+    "workerman/webman-framework": "^2.1 || dev-master"
   },
   "autoload": {
     "psr-4": {
