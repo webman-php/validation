@@ -169,6 +169,456 @@ final class ValidateMiddlewareTest extends TestCase
         $this->assertTrue($called);
     }
 
+    public function testParamValidationComplexSignatureDefaultValueWithRequiredShouldPassWhenMissing(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamComplexController::class,
+            action: 'test',
+            query: ['from' => 'api', 'id' => 1, 'price' => 12.34],
+            routeParams: ['data' => ['k' => 'v']]
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testParamValidationComplexSignatureMissingFromShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamComplexController::class,
+            action: 'test',
+            query: ['id' => 1, 'price' => 12.34],
+            routeParams: ['data' => ['k' => 'v']]
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('From required');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testParamValidationComplexSignatureMissingIdShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamComplexController::class,
+            action: 'test',
+            query: ['from' => 'api', 'price' => 12.34],
+            routeParams: ['data' => ['k' => 'v']]
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Id required');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testParamValidationComplexSignatureMissingPriceShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamComplexController::class,
+            action: 'test',
+            query: ['from' => 'api', 'id' => 1],
+            routeParams: ['data' => ['k' => 'v']]
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Price required');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testParamValidationComplexSignatureMissingDataShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamComplexController::class,
+            action: 'test',
+            query: ['from' => 'api', 'id' => 1, 'price' => 12.34]
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Data required');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testAutoInferValidationMissingRequiredParamsShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: AutoInferController::class,
+            action: 'send'
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The name field is required.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testAutoInferValidationWrongTypeShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: AutoInferController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'age' => 'bad']
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The age field must be an integer.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testAutoInferValidationDefaultValueParamNotRequiredShouldPass(): void
+    {
+        $request = $this->makeRequest(
+            controller: AutoInferController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'age' => 18]
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testAutoInferWithParamButWithoutValidateMissingShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamOnlyInferController::class,
+            action: 'send',
+            query: ['name' => 'Tom']
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The age field is required.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testAutoInferWithParamButWithoutValidateWrongTypeShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamOnlyInferController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'age' => 'bad']
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The age field must be an integer.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testAutoInferWithParamButWithoutValidatePass(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamOnlyInferController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'age' => 18]
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testParamIncompleteRulesAutoCompleteRequiredShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamIncompleteRulesController::class,
+            action: 'send',
+            query: ['name' => 'Tom']
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The age field is required.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testParamIncompleteRulesAutoCompleteTypeShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamIncompleteRulesController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'age' => 'bad']
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The age field must be an integer.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testParamIncompleteRulesAutoCompletePass(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamIncompleteRulesController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'age' => 5]
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testNullableTypeNotRequiredShouldPassWhenMissing(): void
+    {
+        $request = $this->makeRequest(
+            controller: NullableParamController::class,
+            action: 'send',
+            query: ['name' => 'Tom']
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testNullableTypeWrongTypeShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: NullableParamController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'age' => 'bad']
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The age field must be an integer.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testNullableTypeWithValueShouldPass(): void
+    {
+        $request = $this->makeRequest(
+            controller: NullableParamController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'age' => 18]
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testParamEmptyRulesAutoInferAllShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamEmptyRulesController::class,
+            action: 'send',
+            query: []
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('ID is required');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testParamEmptyRulesAutoInferAllTypeShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamEmptyRulesController::class,
+            action: 'send',
+            query: ['id' => 'bad']
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The id field must be an integer.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testParamEmptyRulesAutoInferAllPass(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamEmptyRulesController::class,
+            action: 'send',
+            query: ['id' => 123]
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testParamHasRequiredOnlyAutoCompleteType(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamHasRequiredOnlyController::class,
+            action: 'send',
+            query: ['id' => 'bad']
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The id field must be an integer.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testParamHasTypeOnlyAutoCompleteRequired(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamHasTypeOnlyController::class,
+            action: 'send',
+            query: []
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The id field is required.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testParamWithDefaultValueNotAutoCompleteRequired(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamWithDefaultValueController::class,
+            action: 'send',
+            query: []
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testParamWithDefaultValueAutoCompleteTypeOnly(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamWithDefaultValueController::class,
+            action: 'send',
+            query: ['age' => 'bad']
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The age field must be an integer.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testNullableParamWithRulesAutoCompleteTypeAndNullable(): void
+    {
+        $request = $this->makeRequest(
+            controller: NullableParamWithRulesController::class,
+            action: 'send',
+            query: []
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testNullableParamWithRulesTypeShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: NullableParamWithRulesController::class,
+            action: 'send',
+            query: ['age' => 'bad']
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The age field must be an integer.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testAutoInferFloatType(): void
+    {
+        $request = $this->makeRequest(
+            controller: TypeInferController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'price' => 'bad', 'active' => true, 'tags' => ['a']]
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The price field must be a number.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testAutoInferBoolType(): void
+    {
+        $request = $this->makeRequest(
+            controller: TypeInferController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'price' => 12.5, 'active' => 'bad', 'tags' => ['a']]
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The active field must be true or false.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testAutoInferArrayType(): void
+    {
+        $request = $this->makeRequest(
+            controller: TypeInferController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'price' => 12.5, 'active' => true, 'tags' => 'bad']
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The tags field must be an array.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testAutoInferAllTypesPass(): void
+    {
+        $request = $this->makeRequest(
+            controller: TypeInferController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'price' => 12.5, 'active' => true, 'tags' => ['a', 'b']]
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testNoAnnotationMethodShouldNotValidate(): void
+    {
+        $request = $this->makeRequest(
+            controller: NoAnnotationController::class,
+            action: 'send',
+            query: []
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
     public function testParamValidationCustomAttributesMessage(): void
     {
         $request = $this->makeRequest(
@@ -375,6 +825,138 @@ final class MixedController
         string $from,
         #[Param(rules: 'required|integer')]
         int $id
+    ): void {
+    }
+}
+
+final class ParamComplexController
+{
+    public function test(
+        #[Param(rules: 'required|string', messages: ['required' => 'From required'])]
+        string $from,
+        #[Param(rules: 'required|integer', messages: ['required' => 'Id required'])]
+        int $id,
+        #[Param(rules: 'required|numeric', messages: ['required' => 'Price required'])]
+        float $price,
+        #[Param(rules: 'required|array', messages: ['required' => 'Data required'])]
+        array $data,
+        #[Param(rules: 'required|string', messages: ['required' => 'Content required'])]
+        string $content = '默认值'
+    ): void {
+    }
+}
+
+final class AutoInferController
+{
+    #[Validate]
+    public function send(
+        \Webman\Http\Request $request,
+        string $name,
+        int $age,
+        $sex = 'male'
+    ): void {
+    }
+}
+
+final class ParamOnlyInferController
+{
+    public function send(
+        #[Param(rules: 'string')]
+        string $name,
+        int $age
+    ): void {
+    }
+}
+
+final class ParamIncompleteRulesController
+{
+    #[Validate]
+    public function send(
+        #[Param(rules: 'string')]
+        string $name,
+        #[Param(rules: 'min:1')]
+        int $age
+    ): void {
+    }
+}
+
+final class NullableParamController
+{
+    #[Validate]
+    public function send(
+        string $name,
+        ?int $age
+    ): void {
+    }
+}
+
+final class ParamEmptyRulesController
+{
+    #[Validate]
+    public function send(
+        #[Param(messages: ['id.required' => 'ID is required'])]
+        int $id
+    ): void {
+    }
+}
+
+final class ParamHasRequiredOnlyController
+{
+    #[Validate]
+    public function send(
+        #[Param(rules: 'required')]
+        int $id
+    ): void {
+    }
+}
+
+final class ParamHasTypeOnlyController
+{
+    #[Validate]
+    public function send(
+        #[Param(rules: 'integer')]
+        int $id
+    ): void {
+    }
+}
+
+final class ParamWithDefaultValueController
+{
+    #[Validate]
+    public function send(
+        #[Param(rules: 'min:1')]
+        int $age = 10
+    ): void {
+    }
+}
+
+final class NullableParamWithRulesController
+{
+    #[Validate]
+    public function send(
+        #[Param(rules: 'min:1')]
+        ?int $age
+    ): void {
+    }
+}
+
+final class TypeInferController
+{
+    #[Validate]
+    public function send(
+        string $name,
+        float $price,
+        bool $active,
+        array $tags
+    ): void {
+    }
+}
+
+final class NoAnnotationController
+{
+    public function send(
+        string $name,
+        int $age
     ): void {
     }
 }
