@@ -6,6 +6,7 @@ namespace Webman\Validation;
 use Illuminate\Support\MessageBag;
 use Illuminate\Validation\Validator as IlluminateValidator;
 use InvalidArgumentException;
+use support\Container;
 use Throwable;
 use Webman\Validation\Factory\ValidationFactory;
 
@@ -17,7 +18,8 @@ class Validator
         ?array $messages = null,
         ?array $attributes = null
     ): static {
-        $instance = new static();
+        /** @var static $instance */
+        $instance = Container::make(static::class);
         $instance->data = $data;
 
         $instance->rules = $rules ?? $instance->rules;

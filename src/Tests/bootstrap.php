@@ -5,6 +5,7 @@ if (!function_exists('validation_test_set_config')) {
     function validation_test_set_config(array $overrides = []): void
     {
         $defaults = [
+            'container' => new \Webman\Container(),
             'translation' => [
                 'locale' => 'en',
                 'fallback_locale' => ['en'],
