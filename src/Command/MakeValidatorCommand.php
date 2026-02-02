@@ -34,7 +34,7 @@ final class MakeValidatorCommand extends Command
         $this->addOption('table', 't', InputOption::VALUE_REQUIRED, 'Generate rules from database table (e.g. users)');
         $this->addOption('connection', 'c', InputOption::VALUE_REQUIRED, 'Database connection name');
         $this->addOption('scenes', 's', InputOption::VALUE_REQUIRED, 'Generate scenes (supported: crud)');
-        $this->addOption('orm', 'o', InputOption::VALUE_REQUIRED, 'ORM to use: auto|illuminate|thinkorm (default: auto)');
+        $this->addOption('orm', 'o', InputOption::VALUE_REQUIRED, 'ORM to use: auto|laravel|thinkorm (default: auto)');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -86,7 +86,7 @@ final class MakeValidatorCommand extends Command
                 $orm = $detector->resolve($ormOption);
 
                 $resolver = match ($orm) {
-                    OrmDetector::ORM_ILLUMINATE => new IlluminateConnectionResolver(),
+                    OrmDetector::ORM_LARAVEL => new IlluminateConnectionResolver(),
                     OrmDetector::ORM_THINKORM => new ThinkOrmConnectionResolver(),
                     default => throw new \RuntimeException("Unsupported orm: {$orm}"),
                 };
@@ -98,9 +98,15 @@ final class MakeValidatorCommand extends Command
 
                 $tableDef = $introspector->introspect($connection, $table);
 
+                $excludeColumns = match ($orm) {
+                    OrmDetector::ORM_LARAVEL => ExcludedColumns::defaultForIlluminate(),
+                    OrmDetector::ORM_THINKORM => ExcludedColumns::defaultForThinkOrm(),
+                    default => ExcludedColumns::defaultForIlluminate(),
+                };
+
                 $inferrer = new DefaultRuleInferrer();
                 $result = $inferrer->infer($tableDef, [
-                    'exclude_columns' => ExcludedColumns::defaultForIlluminate(),
+                    'exclude_columns' => $excludeColumns,
                     'with_scenes' => $scenesOption !== '',
                     'scenes' => $scenesOption,
                 ]);

@@ -6,16 +6,16 @@ namespace Webman\Validation\Command\ValidatorGenerator\Support;
 final class OrmDetector
 {
     public const ORM_AUTO = 'auto';
-    public const ORM_ILLUMINATE = 'illuminate';
+    public const ORM_LARAVEL = 'laravel';
     public const ORM_THINKORM = 'thinkorm';
 
     /**
-     * @return array{illuminate: bool, thinkorm: bool}
+     * @return array{laravel: bool, thinkorm: bool}
      */
     public function availability(): array
     {
         return [
-            'illuminate' => $this->isIlluminateAvailable(),
+            'laravel' => $this->isIlluminateAvailable(),
             'thinkorm' => $this->isThinkOrmAvailable(),
         ];
     }
@@ -25,8 +25,8 @@ final class OrmDetector
         $requestedOrm = strtolower(trim($requestedOrm));
         if ($requestedOrm === '' || $requestedOrm === self::ORM_AUTO) {
             $availability = $this->availability();
-            if ($availability['illuminate']) {
-                return self::ORM_ILLUMINATE;
+            if ($availability['laravel']) {
+                return self::ORM_LARAVEL;
             }
             if ($availability['thinkorm']) {
                 return self::ORM_THINKORM;
@@ -34,11 +34,16 @@ final class OrmDetector
             throw new \RuntimeException('No ORM available. Please install/configure illuminate/database or think-orm.');
         }
 
-        if ($requestedOrm === self::ORM_ILLUMINATE) {
+        // Backward compatible alias: `illuminate` => `laravel`
+        if ($requestedOrm === 'illuminate') {
+            $requestedOrm = self::ORM_LARAVEL;
+        }
+
+        if ($requestedOrm === self::ORM_LARAVEL) {
             if (!$this->isIlluminateAvailable()) {
-                throw new \RuntimeException('Requested orm=illuminate but illuminate/database is not available.');
+                throw new \RuntimeException('Requested orm=laravel but illuminate/database is not available.');
             }
-            return self::ORM_ILLUMINATE;
+            return self::ORM_LARAVEL;
         }
 
         if ($requestedOrm === self::ORM_THINKORM) {

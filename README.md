@@ -337,6 +337,70 @@ return [
 
 After installation, the component automatically loads the validation middleware via `config/plugin/webman/validation/middleware.php`, no manual registration required.
 
+## CLI Generator
+
+Use `make:validator` to generate a validator class (generated under `app/validation` by default).
+
+### Basic
+
+- **Generate an empty template**
+
+```bash
+php webman make:validator UserValidator
+```
+
+- **Overwrite if the file already exists**
+
+```bash
+php webman make:validator UserValidator --force
+php webman make:validator UserValidator -f
+```
+
+### Generate rules from a table
+
+- **Generate rules from a table schema** (infers `$rules` from column type/nullability/length; default excluded columns depend on ORM: laravel uses `created_at/updated_at/deleted_at`, thinkorm uses `create_time/update_time/delete_time`)
+
+```bash
+php webman make:validator UserValidator --table=wa_users
+php webman make:validator UserValidator -t=wa_users
+```
+
+- **Select a database connection** (multi-connection)
+
+```bash
+php webman make:validator UserValidator --table=wa_users --connection=mysql
+php webman make:validator UserValidator -t=wa_users -c=mysql
+```
+
+### Scenes
+
+- **Generate CRUD scenes**: `create/update/delete/detail`
+
+```bash
+php webman make:validator UserValidator --table=wa_users --scenes=crud
+php webman make:validator UserValidator -t=wa_users -s=crud
+```
+
+> The `update` scene includes the primary key (to locate the record) plus the other fields; `delete/detail` include only primary key fields by default.
+
+### ORM selection (laravel(illuminate/database) vs think-orm)
+
+- **Auto (default)**: uses the available ORM; if both exist, defaults to illuminate
+- **Force**
+
+```bash
+php webman make:validator UserValidator --table=wa_users --orm=laravel
+php webman make:validator UserValidator --table=wa_users --orm=thinkorm
+php webman make:validator UserValidator -t=wa_users -o=thinkorm
+```
+
+### Example
+
+```bash
+php webman make:validator UserValidator -t=wa_users -c=mysql -s=crud -o=laravel -f
+```
+
+
 ## Unit Testing
 
 Enter the `webman/validation` root directory and execute:

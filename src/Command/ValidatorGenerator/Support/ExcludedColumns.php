@@ -12,5 +12,14 @@ final class ExcludedColumns
     {
         return ['created_at', 'updated_at', 'deleted_at'];
     }
+
+    /**
+     * @return list<string>
+     */
+    public static function defaultForThinkOrm(): array
+    {
+        // ThinkORM (ThinkPHP) commonly uses *_time fields for timestamps/soft delete.
+        return ['create_time', 'update_time', 'delete_time'];
+    }
 }
 

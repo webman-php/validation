@@ -338,6 +338,70 @@ return [
 
 组件安装后会通过 `config/plugin/webman/validation/middleware.php` 自动加载验证中间件，无需手动注册。
 
+## 命令行生成注解
+
+
+使用命令 `make:validator` 生成验证器类（默认生成到 `app/validation` 目录）。
+
+### 基础用法
+
+- **生成空模板**
+
+```bash
+php webman make:validator UserValidator
+```
+
+- **覆盖已存在文件**
+
+```bash
+php webman make:validator UserValidator --force
+php webman make:validator UserValidator -f
+```
+
+### 从表结构生成规则
+
+- **指定表名生成基础规则**（会根据字段类型/可空/长度等推导 `$rules`；默认排除字段与 ORM 相关：laravel 为 `created_at/updated_at/deleted_at`，thinkorm 为 `create_time/update_time/delete_time`）
+
+```bash
+php webman make:validator UserValidator --table=wa_users
+php webman make:validator UserValidator -t=wa_users
+```
+
+- **指定数据库连接**（多连接场景）
+
+```bash
+php webman make:validator UserValidator --table=wa_users --connection=mysql
+php webman make:validator UserValidator -t=wa_users -c=mysql
+```
+
+### 场景（scenes）
+
+- **生成 CRUD 场景**：`create/update/delete/detail`
+
+```bash
+php webman make:validator UserValidator --table=wa_users --scenes=crud
+php webman make:validator UserValidator -t=wa_users -s=crud
+```
+
+> `update` 场景会包含主键字段（用于定位记录）以及其余字段；`delete/detail` 默认仅包含主键字段。
+
+### ORM 选择（laravel(illuminate/database) 与 think-orm）
+
+- **自动选择（默认）**：仅安装/配置了哪套就用哪套；都存在时默认用 illuminate
+- **强制指定**
+
+```bash
+php webman make:validator UserValidator --table=wa_users --orm=laravel
+php webman make:validator UserValidator --table=wa_users --orm=thinkorm
+php webman make:validator UserValidator -t=wa_users -o=thinkorm
+```
+
+### 综合示例
+
+```bash
+php webman make:validator UserValidator -t=wa_users -c=mysql -s=crud -o=laravel -f
+```
+
 ## 单元测试
 
 进入 `webman/validation` 根目录执行：
