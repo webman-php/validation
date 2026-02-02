@@ -5,7 +5,6 @@ namespace Webman\Validation\Middleware;
 
 use InvalidArgumentException;
 use ReflectionMethod;
-use ReflectionParameter;
 use Webman\Http\Request;
 use Webman\Validation\Param;
 use Webman\Validation\Validate;
@@ -49,9 +48,43 @@ final class ValidateMiddleware
 
     private function handleParamValidation(array $params, array $data): void
     {
-        foreach ($params as $item) {
-            $this->validateSingleParam($item, $data);
+        if ($params === []) {
+            return;
         }
+
+        $allData = [];
+        $allRules = [];
+        $allMessages = [];
+        $allAttributes = [];
+
+        foreach ($params as $item) {
+            $name = $item['name'];
+            /** @var Param $config */
+            $config = $item['config'];
+
+            $value = $data[$name] ?? null;
+            if ($value === null && $item['hasDefault']) {
+                $value = $item['default'];
+            }
+
+            $allData[$name] = $value;
+            $allRules[$name] = $config->rules;
+
+            // 处理 messages，确保 key 带有字段前缀，避免冲突
+            foreach ($config->messages as $key => $message) {
+                if (!str_contains($key, '.')) {
+                    // 没有点号的 key 自动添加字段名前缀
+                    $key = $name . '.' . $key;
+                }
+                $allMessages[$key] = $message;
+            }
+
+            if ($config->attribute !== '') {
+                $allAttributes[$name] = $config->attribute;
+            }
+        }
+
+        Validator::make($allData, $allRules, $allMessages, $allAttributes)->validate();
     }
 
     private function validateMethod(Validate $config, array $data): void
@@ -80,31 +113,6 @@ final class ValidateMiddleware
         }
 
         Validator::make($data, $config->rules, $config->messages, $config->attributes)->validate();
-    }
-
-    private function validateSingleParam(array $meta, array $data): void
-    {
-        $name = $meta['name'];
-        /** @var Param $config */
-        $config = $meta['config'];
-        $value = $data[$name] ?? null;
-        if ($value === null && $meta['hasDefault']) {
-            $value = $meta['default'];
-        }
-
-        $rules = $config->rules;
-
-        $attributes = [];
-        if ($config->attribute !== '') {
-            $attributes = [$name => $config->attribute];
-        }
-
-        Validator::make(
-            [$name => $value],
-            [$name => $rules],
-            $config->messages,
-            $attributes
-        )->validate();
     }
 
     private function getRequestData(Request $request): array
