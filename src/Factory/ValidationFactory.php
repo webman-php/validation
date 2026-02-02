@@ -16,14 +16,18 @@ use Illuminate\Support\Facades\Facade;
 final class ValidationFactory
 {
     private static ?Factory $factory = null;
+    private static bool $presenceVerifierBound = false;
 
     public static function getFactory(): Factory
     {
         if (self::$factory === null) {
             self::$factory = self::createFactory();
+            self::$presenceVerifierBound = false;
         }
 
-        self::bindPresenceVerifier(self::$factory);
+        if (!self::$presenceVerifierBound) {
+            self::bindPresenceVerifier(self::$factory);
+        }
 
         return self::$factory;
     }
@@ -58,10 +62,12 @@ final class ValidationFactory
     private static function bindPresenceVerifier(Factory $factory): void
     {
         if ($factory->getPresenceVerifier() instanceof DatabasePresenceVerifierInterface) {
+            self::$presenceVerifierBound = true;
             return;
         }
 
         if (!class_exists(DatabasePresenceVerifier::class) || !class_exists(Model::class)) {
+            self::$presenceVerifierBound = true;
             return;
         }
 
@@ -74,6 +80,7 @@ final class ValidationFactory
         }
 
         $factory->setPresenceVerifier(new DatabasePresenceVerifier($resolver));
+        self::$presenceVerifierBound = true;
     }
 
     private static function createLoader(): FileLoader
