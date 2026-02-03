@@ -297,6 +297,107 @@ class UserController
 }
 ```
 
+## Automatic Rule Inference (Signature-Based)
+
+When a method uses `#[Validate]`, or any parameter on that method uses `#[Param]`, this package will **infer and auto-complete basic validation rules from the PHP method signature**, then merge them with your existing rules and run validation.
+
+### Examples: `#[Validate]` Equivalent Expansion
+
+1) Enable `#[Validate]` without writing rules:
+
+```php
+use support\validation\Validate;
+
+class DemoController
+{
+    #[Validate]
+    public function create(string $content, int $uid)
+    {
+    }
+}
+```
+
+Equivalent to:
+
+```php
+use support\validation\Validate;
+
+class DemoController
+{
+    #[Validate(rules: [
+        'content' => 'required|string',
+        'uid' => 'required|integer',
+    ])]
+    public function create(string $content, int $uid)
+    {
+    }
+}
+```
+
+2) Only partial rules provided, the rest is inferred:
+
+```php
+use support\validation\Validate;
+
+class DemoController
+{
+    #[Validate(rules: [
+        'content' => 'min:2',
+    ])]
+    public function create(string $content, int $uid)
+    {
+    }
+}
+```
+
+Equivalent to:
+
+```php
+use support\validation\Validate;
+
+class DemoController
+{
+    #[Validate(rules: [
+        'content' => 'required|string|min:2',
+        'uid' => 'required|integer',
+    ])]
+    public function create(string $content, int $uid)
+    {
+    }
+}
+```
+
+3) Default values / nullable types:
+
+```php
+use support\validation\Validate;
+
+class DemoController
+{
+    #[Validate]
+    public function create(string $content = 'default', ?int $uid = null)
+    {
+    }
+}
+```
+
+Equivalent to:
+
+```php
+use support\validation\Validate;
+
+class DemoController
+{
+    #[Validate(rules: [
+        'content' => 'string',
+        'uid' => 'integer|nullable',
+    ])]
+    public function create(string $content = 'default', ?int $uid = null)
+    {
+    }
+}
+```
+
 ## Exception Handling
 
 ### Default Exception
@@ -340,6 +441,9 @@ After installation, the component automatically loads the validation middleware 
 ## CLI Generator
 
 Use `make:validator` to generate a validator class (generated under `app/validation` by default).
+
+> **Tip**  
+> You need to install `composer require webman/console`
 
 ### Basic
 

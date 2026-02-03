@@ -298,6 +298,107 @@ class UserController
 }
 ```
 
+## 自动规则推导（基于参数签名）
+
+当方法上使用 `#[Validate]`，或该方法的任意参数使用了 `#[Param]` 时，本组件会**根据方法参数签名自动推导并补全基础验证规则**，再与已有规则合并后执行验证。
+
+### 示例：`#[Validate]` 等价展开
+
+1) 只开启 `#[Validate]`，不手写规则：
+
+```php
+use support\validation\Validate;
+
+class DemoController
+{
+    #[Validate]
+    public function create(string $content, int $uid)
+    {
+    }
+}
+```
+
+等价于：
+
+```php
+use support\validation\Validate;
+
+class DemoController
+{
+    #[Validate(rules: [
+        'content' => 'required|string',
+        'uid' => 'required|integer',
+    ])]
+    public function create(string $content, int $uid)
+    {
+    }
+}
+```
+
+2) 只写了部分规则，其余由参数签名补全：
+
+```php
+use support\validation\Validate;
+
+class DemoController
+{
+    #[Validate(rules: [
+        'content' => 'min:2',
+    ])]
+    public function create(string $content, int $uid)
+    {
+    }
+}
+```
+
+等价于：
+
+```php
+use support\validation\Validate;
+
+class DemoController
+{
+    #[Validate(rules: [
+        'content' => 'required|string|min:2',
+        'uid' => 'required|integer',
+    ])]
+    public function create(string $content, int $uid)
+    {
+    }
+}
+```
+
+3) 默认值/可空类型：
+
+```php
+use support\validation\Validate;
+
+class DemoController
+{
+    #[Validate]
+    public function create(string $content = '默认值', ?int $uid = null)
+    {
+    }
+}
+```
+
+等价于：
+
+```php
+use support\validation\Validate;
+
+class DemoController
+{
+    #[Validate(rules: [
+        'content' => 'string',
+        'uid' => 'integer|nullable',
+    ])]
+    public function create(string $content = '默认值', ?int $uid = null)
+    {
+    }
+}
+```
+
 ## 异常处理
 
 ### 默认异常
@@ -342,6 +443,9 @@ return [
 
 
 使用命令 `make:validator` 生成验证器类（默认生成到 `app/validation` 目录）。
+
+> **提示**
+> 需要安装 `composer require webman/console`
 
 ### 基础用法
 
