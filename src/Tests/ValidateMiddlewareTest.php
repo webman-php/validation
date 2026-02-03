@@ -688,6 +688,61 @@ final class ValidateMiddlewareTest extends TestCase
         $this->assertTrue($called);
     }
 
+    public function testValidatorClassWithAutoInferParamsMissingShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: ValidatorWithAutoInferParamsController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'email' => 'user@example.com']
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The title field is required.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testValidatorClassWithAutoInferParamsTypeShouldFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: ValidatorWithAutoInferParamsController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'email' => 'user@example.com', 'title' => 'Hello', 'count' => 'bad']
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The count field must be an integer.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testValidatorClassWithAutoInferParamsPass(): void
+    {
+        $request = $this->makeRequest(
+            controller: ValidatorWithAutoInferParamsController::class,
+            action: 'send',
+            query: ['name' => 'Tom', 'email' => 'user@example.com', 'title' => 'Hello', 'count' => 5]
+        );
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testValidatorClassValidationFailButAutoInferParamsOk(): void
+    {
+        $request = $this->makeRequest(
+            controller: ValidatorWithAutoInferParamsController::class,
+            action: 'send',
+            query: ['name' => 'T', 'email' => 'bad-email', 'title' => 'Hello', 'count' => 5]
+        );
+
+        $this->expectException(ValidationException::class);
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
     private function makeRequest(
         string $controller,
         string $action,
@@ -957,6 +1012,17 @@ final class NoAnnotationController
     public function send(
         string $name,
         int $age
+    ): void {
+    }
+}
+
+final class ValidatorWithAutoInferParamsController
+{
+    #[Validate(validator: MethodSceneValidator::class)]
+    public function send(
+        Request $request,
+        string $title,
+        int $count
     ): void {
     }
 }
