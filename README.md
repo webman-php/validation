@@ -472,8 +472,8 @@ php webman make:validator UserValidator -t=wa_users
 - **Select a database connection** (multi-connection)
 
 ```bash
-php webman make:validator UserValidator --table=wa_users --connection=mysql
-php webman make:validator UserValidator -t=wa_users -c=mysql
+php webman make:validator UserValidator --table=wa_users --database=mysql
+php webman make:validator UserValidator -t=wa_users -d=mysql
 ```
 
 ### Scenes
@@ -501,7 +501,7 @@ php webman make:validator UserValidator -t=wa_users -o=thinkorm
 ### Example
 
 ```bash
-php webman make:validator UserValidator -t=wa_users -c=mysql -s=crud -o=laravel -f
+php webman make:validator UserValidator -t=wa_users -d=mysql -s=crud -o=laravel -f
 ```
 
 

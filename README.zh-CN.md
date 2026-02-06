@@ -474,8 +474,8 @@ php webman make:validator UserValidator -t=wa_users
 - **指定数据库连接**（多连接场景）
 
 ```bash
-php webman make:validator UserValidator --table=wa_users --connection=mysql
-php webman make:validator UserValidator -t=wa_users -c=mysql
+php webman make:validator UserValidator --table=wa_users --database=mysql
+php webman make:validator UserValidator -t=wa_users -d=mysql
 ```
 
 ### 场景（scenes）
@@ -503,7 +503,7 @@ php webman make:validator UserValidator -t=wa_users -o=thinkorm
 ### 综合示例
 
 ```bash
-php webman make:validator UserValidator -t=wa_users -c=mysql -s=crud -o=laravel -f
+php webman make:validator UserValidator -t=wa_users -d=mysql -s=crud -o=laravel -f
 ```
 
 ## 单元测试

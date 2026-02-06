@@ -63,8 +63,8 @@ final class MakeValidatorCommand extends Command
             $this->isZhLocale() ? '从数据库表推断并生成规则（例如：users）' : 'Generate rules from database table (e.g. users)'
         );
         $this->addOption(
-            'connection',
-            'c',
+            'database',
+            'd',
             InputOption::VALUE_REQUIRED,
             $this->isZhLocale() ? '数据库连接名' : 'Database connection name'
         );
@@ -88,7 +88,7 @@ final class MakeValidatorCommand extends Command
         $this->addUsage('admin/UserValidator');
         $this->addUsage('UserValidator -p admin');
         $this->addUsage('UserValidator -P plugin/admin/app/validation');
-        $this->addUsage('UserValidator -t users -c default');
+        $this->addUsage('UserValidator -t users -d default');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output): int
@@ -105,9 +105,9 @@ final class MakeValidatorCommand extends Command
         $table = is_string($table) ? trim($table) : '';
         // Some Symfony Console versions parse `-t=foo` as `=foo` for short options.
         $table = ltrim($table, '=');
-        $connectionName = $input->getOption('connection');
+        $connectionName = $input->getOption('database');
         $connectionName = is_string($connectionName) ? trim($connectionName) : '';
-        // Some Symfony Console versions parse `-c=foo` as `=foo` for short options.
+        // Some Symfony Console versions parse `-d=foo` as `=foo` for short options.
         $connectionName = ltrim($connectionName, '=');
         $connectionName = $connectionName !== '' ? $connectionName : null;
         $scenesOption = $input->getOption('scenes');
