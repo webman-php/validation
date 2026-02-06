@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Webman\Validation\Command;
 
+use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -19,12 +20,10 @@ use Webman\Validation\Command\ValidatorGenerator\ThinkOrm\ThinkOrmConnectionReso
 use Webman\Validation\Command\ValidatorGenerator\Support\ValidatorClassRenderer;
 use Webman\Validation\Command\ValidatorGenerator\Support\ValidatorFileWriter;
 
+#[AsCommand('make:validator', 'Make validation validator class.')]
 final class MakeValidatorCommand extends Command
 {
     use MakeCommandHelpers;
-
-    protected static $defaultName = 'make:validator';
-    protected static $defaultDescription = 'Make validation validator class';
 
     protected function configure(): void
     {
