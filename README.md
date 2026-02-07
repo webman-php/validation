@@ -466,14 +466,14 @@ php webman make:validator UserValidator -f
 
 ```bash
 php webman make:validator UserValidator --table=wa_users
-php webman make:validator UserValidator -t=wa_users
+php webman make:validator UserValidator -t wa_users
 ```
 
 - **Select a database connection** (multi-connection)
 
 ```bash
 php webman make:validator UserValidator --table=wa_users --database=mysql
-php webman make:validator UserValidator -t=wa_users -d=mysql
+php webman make:validator UserValidator -t wa_users -d mysql
 ```
 
 ### Scenes
@@ -482,7 +482,7 @@ php webman make:validator UserValidator -t=wa_users -d=mysql
 
 ```bash
 php webman make:validator UserValidator --table=wa_users --scenes=crud
-php webman make:validator UserValidator -t=wa_users -s=crud
+php webman make:validator UserValidator -t wa_users -s crud
 ```
 
 > The `update` scene includes the primary key (to locate the record) plus the other fields; `delete/detail` include only primary key fields by default.
@@ -495,13 +495,13 @@ php webman make:validator UserValidator -t=wa_users -s=crud
 ```bash
 php webman make:validator UserValidator --table=wa_users --orm=laravel
 php webman make:validator UserValidator --table=wa_users --orm=thinkorm
-php webman make:validator UserValidator -t=wa_users -o=thinkorm
+php webman make:validator UserValidator -t wa_users -o thinkorm
 ```
 
 ### Example
 
 ```bash
-php webman make:validator UserValidator -t=wa_users -d=mysql -s=crud -o=laravel -f
+php webman make:validator UserValidator -t wa_users -d mysql -s crud -o laravel -f
 ```
 
 

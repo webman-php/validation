@@ -468,14 +468,14 @@ php webman make:validator UserValidator -f
 
 ```bash
 php webman make:validator UserValidator --table=wa_users
-php webman make:validator UserValidator -t=wa_users
+php webman make:validator UserValidator -t wa_users
 ```
 
 - **指定数据库连接**（多连接场景）
 
 ```bash
 php webman make:validator UserValidator --table=wa_users --database=mysql
-php webman make:validator UserValidator -t=wa_users -d=mysql
+php webman make:validator UserValidator -t wa_users -d mysql
 ```
 
 ### 场景（scenes）
@@ -484,7 +484,7 @@ php webman make:validator UserValidator -t=wa_users -d=mysql
 
 ```bash
 php webman make:validator UserValidator --table=wa_users --scenes=crud
-php webman make:validator UserValidator -t=wa_users -s=crud
+php webman make:validator UserValidator -t wa_users -s crud
 ```
 
 > `update` 场景会包含主键字段（用于定位记录）以及其余字段；`delete/detail` 默认仅包含主键字段。
@@ -497,13 +497,13 @@ php webman make:validator UserValidator -t=wa_users -s=crud
 ```bash
 php webman make:validator UserValidator --table=wa_users --orm=laravel
 php webman make:validator UserValidator --table=wa_users --orm=thinkorm
-php webman make:validator UserValidator -t=wa_users -o=thinkorm
+php webman make:validator UserValidator -t wa_users -o thinkorm
 ```
 
 ### 综合示例
 
 ```bash
-php webman make:validator UserValidator -t=wa_users -d=mysql -s=crud -o=laravel -f
+php webman make:validator UserValidator -t wa_users -d mysql -s crud -o laravel -f
 ```
 
 ## 单元测试
