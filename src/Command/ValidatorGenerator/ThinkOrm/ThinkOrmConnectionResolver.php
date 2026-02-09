@@ -10,13 +10,17 @@ final class ThinkOrmConnectionResolver implements ConnectionResolverInterface
 {
     public function resolve(?string $connectionName = null): SchemaConnectionInterface
     {
-        $thinkorm = config('think-orm') ?: config('thinkorm');
+        $thinkorm = config('think-orm');
+        if (!is_array($thinkorm) || $thinkorm === []) {
+            $alt = config('thinkorm');
+            $thinkorm = is_array($alt) ? $alt : null;
+        }
         if (!is_array($thinkorm)) {
             throw new \RuntimeException('Think-orm config not found: config("think-orm") or config("thinkorm").');
         }
 
-        $connections = $thinkorm['connections'] ?? null;
-        if (!is_array($connections) || $connections === []) {
+        $mainConnections = $thinkorm['connections'] ?? null;
+        if (!is_array($mainConnections) || $mainConnections === []) {
             throw new \RuntimeException('Invalid think-orm config: connections must be a non-empty array.');
         }
 
@@ -29,6 +33,39 @@ final class ThinkOrmConnectionResolver implements ConnectionResolverInterface
             $name = trim($default);
         }
 
+        $name = trim((string)$name);
+        $connKey = $name;
+        $connections = $mainConnections;
+
+        if (str_starts_with($name, 'plugin.')) {
+            // plugin.<plugin>.<connection>
+            $parts = explode('.', $name, 3);
+            $plugin = $parts[1] ?? '';
+            $conn = $parts[2] ?? '';
+            $plugin = is_string($plugin) ? trim($plugin) : '';
+            $conn = is_string($conn) ? trim($conn) : '';
+            if ($plugin === '' || $conn === '') {
+                throw new \RuntimeException("Invalid plugin connection name: {$name}");
+            }
+
+            $pluginCfg = config("plugin.$plugin.thinkorm");
+            if (!is_array($pluginCfg) || $pluginCfg === []) {
+                $alt = config("plugin.$plugin.think-orm");
+                $pluginCfg = is_array($alt) ? $alt : [];
+            }
+            $pluginConnections = $pluginCfg['connections'] ?? null;
+            if (is_array($pluginConnections) && $pluginConnections !== []) {
+                $connections = $pluginConnections;
+                $connKey = "plugin.$plugin.$conn";
+                $name = $conn;
+            } else {
+                // No plugin think-orm connections: fallback to main project config.
+                $connections = $mainConnections;
+                $connKey = $conn;
+                $name = $conn;
+            }
+        }
+
         if (!array_key_exists($name, $connections)) {
             $available = implode(', ', array_keys($connections));
             throw new \RuntimeException("Think-orm connection not found: {$name}. Available connections: {$available}");
@@ -39,7 +76,7 @@ final class ThinkOrmConnectionResolver implements ConnectionResolverInterface
         $driver = (string)($cfg['type'] ?? 'mysql');
         $database = isset($cfg['database']) ? (string)$cfg['database'] : null;
 
-        $connection = $this->connect($name);
+        $connection = $this->connect($connKey);
         return new ThinkOrmSchemaConnection($connection, strtolower($driver), $database);
     }
 
