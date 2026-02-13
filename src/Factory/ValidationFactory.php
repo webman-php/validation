@@ -22,7 +22,6 @@ final class ValidationFactory
     {
         if (self::$factory === null) {
             self::$factory = self::createFactory();
-            self::$presenceVerifierBound = false;
         }
 
         if (!self::$presenceVerifierBound) {
@@ -61,9 +60,13 @@ final class ValidationFactory
 
     private static function bindPresenceVerifier(Factory $factory): void
     {
-        if ($factory->getPresenceVerifier() instanceof DatabasePresenceVerifierInterface) {
-            self::$presenceVerifierBound = true;
-            return;
+        try {
+            if ($factory->getPresenceVerifier() instanceof DatabasePresenceVerifierInterface) {
+                self::$presenceVerifierBound = true;
+                return;
+            }
+        } catch (\Throwable) {
+            // Verifier not yet set; continue to try binding.
         }
 
         if (!class_exists(DatabasePresenceVerifier::class) || !class_exists(Model::class)) {

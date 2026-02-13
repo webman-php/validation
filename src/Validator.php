@@ -41,6 +41,7 @@ class Validator
     protected array $data = [];
     protected ?string $scene = null;
     private ?IlluminateValidator $validator = null;
+    private static array $validatedExceptionClasses = [];
 
     public function withScene(string $scene): static
     {
@@ -180,6 +181,12 @@ class Validator
         if (!is_string($exceptionClass) || $exceptionClass === '') {
             throw new InvalidArgumentException('Validation exception must be a non-empty class string.');
         }
+
+        // Cache validation result per class name to avoid repeated reflection checks.
+        if (isset(self::$validatedExceptionClasses[$exceptionClass])) {
+            return $exceptionClass;
+        }
+
         if (!class_exists($exceptionClass)) {
             throw new InvalidArgumentException("Validation exception class not found: {$exceptionClass}");
         }
@@ -187,6 +194,7 @@ class Validator
             throw new InvalidArgumentException("Validation exception must implement Throwable: {$exceptionClass}");
         }
 
+        self::$validatedExceptionClasses[$exceptionClass] = true;
         return $exceptionClass;
     }
 }

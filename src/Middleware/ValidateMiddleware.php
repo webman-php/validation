@@ -3,7 +3,10 @@ declare(strict_types=1);
 
 namespace Webman\Validation\Middleware;
 
+use Closure;
 use InvalidArgumentException;
+use ReflectionFunction;
+use ReflectionFunctionAbstract;
 use ReflectionMethod;
 use ReflectionNamedType;
 use ReflectionParameter;
@@ -19,13 +22,7 @@ final class ValidateMiddleware
 
     public function process(Request $request, callable $handler)
     {
-        $controller = $request->controller ?: '';
-        $action = $request->action ?: '';
-        if ($controller === '' || $action === '' || !class_exists($controller)) {
-            return $handler($request);
-        }
-
-        $metadata = $this->getMethodMetadata($controller, $action);
+        $metadata = $this->resolveMetadata($request);
         if ($metadata === null || !$metadata['has']) {
             return $handler($request);
         }
@@ -36,6 +33,18 @@ final class ValidateMiddleware
         $this->handleParamValidation($metadata['params'], $data);
 
         return $handler($request);
+    }
+
+    private function resolveMetadata(Request $request): ?array
+    {
+        $controller = $request->controller ?: '';
+        $action = $request->action ?: '';
+
+        if ($controller !== '' && $action !== '' && class_exists($controller)) {
+            return $this->getMethodMetadata($controller, $action);
+        }
+
+        return $this->getCallableMetadata($request);
     }
 
     private function handleMethodValidation(array $methods, array $data): void
@@ -138,18 +147,66 @@ final class ValidateMiddleware
             return self::$metadataCache[$key] = null;
         }
 
-        $method = new ReflectionMethod($controller, $action);
+        $reflection = new ReflectionMethod($controller, $action);
 
-        $methods = [];
-        $hasValidateAttribute = false;
-        foreach ($method->getAttributes(Validate::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
-            /** @var Validate $config */
-            $config = $attribute->newInstance();
-            $methods[] = $config;
-            $hasValidateAttribute = true;
+        return self::$metadataCache[$key] = $this->buildMetadataFromReflection($reflection, true);
+    }
+
+    /**
+     * Resolve metadata for closure / named-function route handlers.
+     */
+    private function getCallableMetadata(Request $request): ?array
+    {
+        $route = $request->route;
+        if (!$route || !method_exists($route, 'getCallback')) {
+            return null;
         }
 
-        $parameters = $method->getParameters();
+        $callback = $route->getCallback();
+
+        // Only handle closures and named function strings.
+        if (!$callback instanceof Closure && !is_string($callback)) {
+            return null;
+        }
+
+        if (is_string($callback) && !function_exists($callback)) {
+            return null;
+        }
+
+        $cacheKey = is_string($callback)
+            ? 'func::' . $callback
+            : 'callable::' . $route->getPath();
+
+        if (isset(self::$metadataCache[$cacheKey])) {
+            return self::$metadataCache[$cacheKey];
+        }
+
+        $reflection = new ReflectionFunction($callback);
+
+        // Named functions support function-level #[Validate]; closures do not.
+        $supportsMethodAttributes = is_string($callback);
+
+        return self::$metadataCache[$cacheKey] = $this->buildMetadataFromReflection(
+            $reflection,
+            $supportsMethodAttributes
+        );
+    }
+
+    /**
+     * Build validation metadata from a ReflectionMethod or ReflectionFunction.
+     */
+    private function buildMetadataFromReflection(
+        ReflectionFunctionAbstract $reflection,
+        bool $supportsMethodAttributes
+    ): array {
+        $methods = [];
+        if ($supportsMethodAttributes) {
+            foreach ($reflection->getAttributes(Validate::class, \ReflectionAttribute::IS_INSTANCEOF) as $attribute) {
+                $methods[] = $attribute->newInstance();
+            }
+        }
+
+        $parameters = $reflection->getParameters();
         $hasAnyParamAttribute = false;
         foreach ($parameters as $parameter) {
             if ($parameter->getAttributes(Param::class, \ReflectionAttribute::IS_INSTANCEOF) !== []) {
@@ -158,7 +215,7 @@ final class ValidateMiddleware
             }
         }
 
-        $inferWhenAnnotationsPresent = $hasValidateAttribute || $hasAnyParamAttribute;
+        $inferWhenAnnotationsPresent = $methods !== [] || $hasAnyParamAttribute;
 
         $params = [];
         foreach ($parameters as $parameter) {
@@ -175,13 +232,11 @@ final class ValidateMiddleware
             ];
         }
 
-        $metadata = [
+        return [
             'has' => $methods !== [] || $params !== [],
             'methods' => $methods,
             'params' => $params,
         ];
-
-        return self::$metadataCache[$key] = $metadata;
     }
 
     private function resolveParamConfig(ReflectionParameter $parameter, bool $inferWhenAnnotationsPresent): ?Param
@@ -269,21 +324,30 @@ final class ValidateMiddleware
 
     private function completeRulesFromParameter(ReflectionParameter $parameter, string|array $existingRules): string|array
     {
-        $rulesString = is_array($existingRules) ? implode('|', $existingRules) : $existingRules;
-        $rulesList = $rulesString !== '' ? explode('|', $rulesString) : [];
+        $isArray = is_array($existingRules);
+        $rulesList = $isArray
+            ? $existingRules
+            : ($existingRules !== '' ? explode('|', $existingRules) : []);
 
         $type = $parameter->getType();
         $isNullable = $type instanceof ReflectionNamedType && $type->allowsNull();
 
+        // Build rule name set for O(1) lookups instead of iterating per check.
+        $ruleNames = [];
+        foreach ($rulesList as $rule) {
+            $ruleNames[explode(':', $rule, 2)[0]] = true;
+        }
+
         // Auto-complete 'required' if: no default value, not nullable, and not already present.
-        if (!$parameter->isDefaultValueAvailable() && !$isNullable && !$this->hasRule($rulesList, 'required')) {
+        if (!$parameter->isDefaultValueAvailable() && !$isNullable && !isset($ruleNames['required'])) {
             array_unshift($rulesList, 'required');
+            $ruleNames['required'] = true;
         }
 
         // Auto-complete type rule if: has builtin type and no type rule present.
         if ($type instanceof ReflectionNamedType && $type->isBuiltin()) {
             $mappedRule = $this->mapBuiltinTypeToRule($type->getName());
-            if ($mappedRule !== '' && !$this->hasRule($rulesList, $mappedRule)) {
+            if ($mappedRule !== '' && !isset($ruleNames[$mappedRule])) {
                 // Insert type rule after 'required' if present, otherwise at the beginning.
                 $requiredIndex = array_search('required', $rulesList, true);
                 if ($requiredIndex !== false) {
@@ -291,28 +355,16 @@ final class ValidateMiddleware
                 } else {
                     array_unshift($rulesList, $mappedRule);
                 }
+                $ruleNames[$mappedRule] = true;
             }
 
             // Auto-complete 'nullable' if: type is nullable and not already present.
-            if ($isNullable && !$this->hasRule($rulesList, 'nullable')) {
+            if ($isNullable && !isset($ruleNames['nullable'])) {
                 $rulesList[] = 'nullable';
             }
         }
 
-        $completedRules = implode('|', $rulesList);
-        return is_array($existingRules) ? $rulesList : $completedRules;
-    }
-
-    private function hasRule(array $rules, string $ruleName): bool
-    {
-        foreach ($rules as $rule) {
-            // Handle rules with parameters like 'min:1', 'in:a,b,c'.
-            $name = explode(':', $rule, 2)[0];
-            if ($name === $ruleName) {
-                return true;
-            }
-        }
-        return false;
+        return $isArray ? $rulesList : implode('|', $rulesList);
     }
 
     private function mapBuiltinTypeToRule(string $type): string

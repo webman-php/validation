@@ -743,6 +743,187 @@ final class ValidateMiddlewareTest extends TestCase
         (new ValidateMiddleware())->process($request, fn () => 'ok');
     }
 
+    // ───── Closure / Function route tests ─────
+
+    public function testClosureParamValidationPass(): void
+    {
+        $closure = function (
+            Request $request,
+            #[Param(rules: 'required|integer')]
+            int $id
+        ): void {};
+
+        $request = $this->makeCallableRequest($closure, '/closure-pass', query: ['id' => 5]);
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testClosureParamValidationFail(): void
+    {
+        $closure = function (
+            Request $request,
+            #[Param(rules: 'required|integer', messages: ['id.integer' => 'Id must be integer'])]
+            int $id
+        ): void {};
+
+        $request = $this->makeCallableRequest($closure, '/closure-fail', query: ['id' => 'bad']);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('Id must be integer');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testClosureAutoInferFromParamAnnotation(): void
+    {
+        $closure = function (
+            Request $request,
+            #[Param(rules: 'string')]
+            string $name,
+            int $age
+        ): void {};
+
+        $request = $this->makeCallableRequest($closure, '/closure-infer', query: ['name' => 'Tom', 'age' => 'bad']);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The age field must be an integer.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testClosureAutoInferFromParamAnnotationPass(): void
+    {
+        $closure = function (
+            Request $request,
+            #[Param(rules: 'string')]
+            string $name,
+            int $age
+        ): void {};
+
+        $request = $this->makeCallableRequest($closure, '/closure-infer-pass', query: ['name' => 'Tom', 'age' => 18]);
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testClosureWithoutAnnotationsSkipsValidation(): void
+    {
+        $closure = function (Request $request, string $name, int $age): void {};
+
+        $request = $this->makeCallableRequest($closure, '/closure-no-annotations', query: []);
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testClosureRouteParamsValidation(): void
+    {
+        $closure = function (
+            Request $request,
+            #[Param(rules: 'required|integer')]
+            int $id
+        ): void {};
+
+        $request = $this->makeCallableRequest($closure, '/closure-route-params', routeParams: ['id' => 7]);
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testClosureMultipleParamsValidation(): void
+    {
+        $closure = function (
+            Request $request,
+            #[Param(rules: 'required|string')]
+            string $name,
+            #[Param(rules: 'required|integer')]
+            int $age
+        ): void {};
+
+        $request = $this->makeCallableRequest($closure, '/closure-multi-pass', query: ['name' => 'Tom', 'age' => 18]);
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testClosureMultipleParamsValidationFail(): void
+    {
+        $closure = function (
+            Request $request,
+            #[Param(rules: 'required|string')]
+            string $name,
+            #[Param(rules: 'required|integer')]
+            int $age
+        ): void {};
+
+        $request = $this->makeCallableRequest($closure, '/closure-multi-fail', query: ['name' => 'Tom']);
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('The age field is required.');
+        (new ValidateMiddleware())->process($request, fn () => 'ok');
+    }
+
+    public function testNoRouteSkipsValidation(): void
+    {
+        $buffer = "GET /test HTTP/1.1\r\nHost: localhost\r\n\r\n";
+        $request = new Request($buffer);
+        $request->controller = '';
+        $request->action = '';
+        $request->route = null;
+
+        $called = false;
+        (new ValidateMiddleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    // ───── Helpers ─────
+
+    private function makeCallableRequest(
+        callable $callback,
+        string $path = '/callable-test',
+        array $query = [],
+        array $routeParams = []
+    ): Request {
+        $queryString = $query ? http_build_query($query) : '';
+        $fullPath = $path . ($queryString !== '' ? '?' . $queryString : '');
+        $buffer = "GET {$fullPath} HTTP/1.1\r\nHost: localhost\r\n\r\n";
+
+        $request = new Request($buffer);
+        $request->controller = '';
+        $request->action = '';
+        $request->route = new Route('GET', $path, $callback);
+        $request->route->setParams($routeParams);
+        return $request;
+    }
+
     private function makeRequest(
         string $controller,
         string $action,
