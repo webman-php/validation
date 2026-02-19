@@ -50,7 +50,7 @@ Validator::make(
 )->validate();
 ```
 
-### Validate Without Exceptions (Get Error Messages)
+### Validate Without Exception (Get Error Messages)
 
 If you don't want exceptions, use `fails()` and read errors from the `MessageBag`:
 
@@ -147,7 +147,7 @@ UserValidator::make($data)->withScene('create')->validate();
 
 ```php
 use support\Request;
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class AuthController
 {
@@ -175,9 +175,9 @@ class AuthController
 ### Reusing Rule Sets
 
 ```php
-use support\Request;
-use support\validation\Validate;
 use app\validation\UserValidator;
+use support\Request;
+use support\validation\annotation\Validate;
 
 class UserController
 {
@@ -192,7 +192,7 @@ class UserController
 ### Multiple Validation Overlays
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class UserController
 {
@@ -210,7 +210,7 @@ class UserController
 ### Basic Usage
 
 ```php
-use support\validation\Param;
+use support\validation\annotation\Param;
 
 class MailController
 {
@@ -227,7 +227,7 @@ class MailController
 ### Rules Support String or Array
 
 ```php
-use support\validation\Param;
+use support\validation\annotation\Param;
 
 class MailController
 {
@@ -242,7 +242,7 @@ class MailController
 ### Custom Messages / Attribute
 
 ```php
-use support\validation\Param;
+use support\validation\annotation\Param;
 
 class UserController
 {
@@ -281,8 +281,8 @@ class UserController
 
 ```php
 use support\Request;
-use support\validation\Validate;
-use support\validation\Param;
+use support\validation\annotation\Param;
+use support\validation\annotation\Validate;
 
 class UserController
 {
@@ -306,7 +306,7 @@ When a method uses `#[Validate]`, or any parameter on that method uses `#[Param]
 1) Enable `#[Validate]` without writing rules:
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class DemoController
 {
@@ -320,7 +320,7 @@ class DemoController
 Equivalent to:
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class DemoController
 {
@@ -337,7 +337,7 @@ class DemoController
 2) Only partial rules provided, the rest is inferred:
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class DemoController
 {
@@ -353,7 +353,7 @@ class DemoController
 Equivalent to:
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class DemoController
 {
@@ -370,7 +370,7 @@ class DemoController
 3) Default values / nullable types:
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class DemoController
 {
@@ -384,7 +384,7 @@ class DemoController
 Equivalent to:
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class DemoController
 {

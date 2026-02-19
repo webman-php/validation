@@ -41,6 +41,7 @@ class Validator
     protected array $data = [];
     protected ?string $scene = null;
     private ?IlluminateValidator $validator = null;
+    private ?string $exceptionClass = null;
     private static array $validatedExceptionClasses = [];
 
     public function withScene(string $scene): static
@@ -51,13 +52,25 @@ class Validator
         return $clone;
     }
 
+    public function exception(string $exceptionClass): static
+    {
+        if ($exceptionClass === '') {
+            throw new InvalidArgumentException('Validation exception must be a non-empty class string.');
+        }
+
+        $clone = clone $this;
+        $clone->exceptionClass = $exceptionClass;
+        $clone->validator = null;
+        return $clone;
+    }
+
     public function validate(): array
     {
         $validator = $this->toIlluminate();
         if ($validator->fails()) {
             $exceptionClass = $this->resolveExceptionClass();
             $message = $validator->errors()->first() ?: 'Validation failed';
-            throw new $exceptionClass($message);
+            throw new $exceptionClass($message, 400);
         }
         return $validator->validated();
     }
@@ -173,10 +186,13 @@ class Validator
 
     private function resolveExceptionClass(): string
     {
-        $exceptionClass = config(
-            'plugin.webman.validation.app.exception',
-            \support\validation\ValidationException::class
-        );
+        $exceptionClass = $this->exceptionClass;
+        if ($exceptionClass === null) {
+            $exceptionClass = config(
+                'plugin.webman.validation.app.exception',
+                \support\validation\ValidationException::class
+            );
+        }
 
         if (!is_string($exceptionClass) || $exceptionClass === '') {
             throw new InvalidArgumentException('Validation exception must be a non-empty class string.');

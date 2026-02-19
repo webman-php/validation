@@ -148,7 +148,7 @@ UserValidator::make($data)->withScene('create')->validate();
 
 ```php
 use support\Request;
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class AuthController
 {
@@ -176,9 +176,9 @@ class AuthController
 ### 复用规则集
 
 ```php
-use support\Request;
-use support\validation\Validate;
 use app\validation\UserValidator;
+use support\Request;
+use support\validation\annotation\Validate;
 
 class UserController
 {
@@ -193,7 +193,7 @@ class UserController
 ### 多重验证叠加
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class UserController
 {
@@ -211,7 +211,7 @@ class UserController
 ### 基本用法
 
 ```php
-use support\validation\Param;
+use support\validation\annotation\Param;
 
 class MailController
 {
@@ -228,7 +228,7 @@ class MailController
 ### rules 支持字符串或数组
 
 ```php
-use support\validation\Param;
+use support\validation\annotation\Param;
 
 class MailController
 {
@@ -243,7 +243,7 @@ class MailController
 ### 自定义 messages / attribute
 
 ```php
-use support\validation\Param;
+use support\validation\annotation\Param;
 
 class UserController
 {
@@ -282,8 +282,8 @@ class UserController
 
 ```php
 use support\Request;
-use support\validation\Validate;
-use support\validation\Param;
+use support\validation\annotation\Param;
+use support\validation\annotation\Validate;
 
 class UserController
 {
@@ -307,7 +307,7 @@ class UserController
 1) 只开启 `#[Validate]`，不手写规则：
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class DemoController
 {
@@ -321,7 +321,7 @@ class DemoController
 等价于：
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class DemoController
 {
@@ -338,7 +338,7 @@ class DemoController
 2) 只写了部分规则，其余由参数签名补全：
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class DemoController
 {
@@ -354,7 +354,7 @@ class DemoController
 等价于：
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class DemoController
 {
@@ -371,7 +371,7 @@ class DemoController
 3) 默认值/可空类型：
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class DemoController
 {
@@ -385,7 +385,7 @@ class DemoController
 等价于：
 
 ```php
-use support\validation\Validate;
+use support\validation\annotation\Validate;
 
 class DemoController
 {

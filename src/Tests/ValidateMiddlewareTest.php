@@ -5,14 +5,14 @@ namespace Webman\Validation\Tests;
 
 use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
-use Webman\Http\Request;
-use Webman\Route\Route;
-use Webman\Validation\Exceptions\ValidationException as BaseValidationException;
-use Webman\Validation\Middleware\ValidateMiddleware;
-use support\validation\Param;
-use support\validation\Validate;
 use support\validation\ValidationException;
 use support\validation\Validator;
+use Webman\Http\Request;
+use Webman\Route\Route;
+use Webman\Validation\Exception\ValidationException as BaseValidationException;
+use support\validation\annotation\Param;
+use support\validation\annotation\Validate;
+use Webman\Validation\Middleware;
 
 final class ValidateMiddlewareTest extends TestCase
 {
@@ -25,7 +25,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -43,7 +43,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Email invalid');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testMethodValidateValidatorWithScenePass(): void
@@ -55,7 +55,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -72,7 +72,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -90,7 +90,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Validation scene not defined: missing');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testValidateAttributeCannotSetBothValidatorAndRules(): void
@@ -103,7 +103,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(InvalidArgumentException::class);
         $this->expectExceptionMessage('Validate cannot set both validator and rules.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testMultipleMethodValidation(): void
@@ -115,7 +115,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -132,7 +132,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -150,7 +150,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Id must be integer');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testParamValidationUsesDefaultValueWhenMissing(): void
@@ -161,7 +161,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -179,7 +179,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -198,7 +198,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('From required');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testParamValidationComplexSignatureMissingIdShouldFail(): void
@@ -212,7 +212,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Id required');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testParamValidationComplexSignatureMissingPriceShouldFail(): void
@@ -226,7 +226,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Price required');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testParamValidationComplexSignatureMissingDataShouldFail(): void
@@ -239,7 +239,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Data required');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testAutoInferValidationMissingRequiredParamsShouldFail(): void
@@ -251,7 +251,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The name field is required.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testAutoInferValidationWrongTypeShouldFail(): void
@@ -264,7 +264,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The age field must be an integer.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testAutoInferValidationDefaultValueParamNotRequiredShouldPass(): void
@@ -276,7 +276,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -294,7 +294,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The age field is required.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testAutoInferWithParamButWithoutValidateWrongTypeShouldFail(): void
@@ -307,7 +307,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The age field must be an integer.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testAutoInferWithParamButWithoutValidatePass(): void
@@ -319,7 +319,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -337,7 +337,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The age field is required.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testParamIncompleteRulesAutoCompleteTypeShouldFail(): void
@@ -350,7 +350,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The age field must be an integer.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testParamIncompleteRulesAutoCompletePass(): void
@@ -362,7 +362,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -379,7 +379,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -397,7 +397,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The age field must be an integer.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testNullableTypeWithValueShouldPass(): void
@@ -409,7 +409,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -427,7 +427,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('ID is required');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testParamEmptyRulesAutoInferAllTypeShouldFail(): void
@@ -440,7 +440,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The id field must be an integer.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testParamEmptyRulesAutoInferAllPass(): void
@@ -452,7 +452,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -470,7 +470,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The id field must be an integer.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testParamHasTypeOnlyAutoCompleteRequired(): void
@@ -483,7 +483,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The id field is required.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testParamWithDefaultValueNotAutoCompleteRequired(): void
@@ -495,7 +495,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -513,7 +513,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The age field must be an integer.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testNullableParamWithRulesAutoCompleteTypeAndNullable(): void
@@ -525,7 +525,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -543,7 +543,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The age field must be an integer.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testAutoInferFloatType(): void
@@ -556,7 +556,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The price field must be a number.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testAutoInferBoolType(): void
@@ -569,7 +569,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The active field must be true or false.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testAutoInferArrayType(): void
@@ -582,7 +582,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The tags field must be an array.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testAutoInferAllTypesPass(): void
@@ -594,7 +594,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -611,7 +611,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -629,7 +629,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Email Address is invalid');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testValidationUsesConfiguredExceptionClass(): void
@@ -654,7 +654,7 @@ final class ValidateMiddlewareTest extends TestCase
             );
 
             $this->expectException(CustomValidationException::class);
-            (new ValidateMiddleware())->process($request, fn () => 'ok');
+            (new Middleware())->process($request, fn () => 'ok');
         } finally {
             validation_test_set_config([
                 'plugin' => [
@@ -680,7 +680,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -698,7 +698,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The title field is required.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testValidatorClassWithAutoInferParamsTypeShouldFail(): void
@@ -711,7 +711,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The count field must be an integer.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testValidatorClassWithAutoInferParamsPass(): void
@@ -723,7 +723,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -740,7 +740,7 @@ final class ValidateMiddlewareTest extends TestCase
         );
 
         $this->expectException(ValidationException::class);
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     // ───── Closure / Function route tests ─────
@@ -756,7 +756,7 @@ final class ValidateMiddlewareTest extends TestCase
         $request = $this->makeCallableRequest($closure, '/closure-pass', query: ['id' => 5]);
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -776,7 +776,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('Id must be integer');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testClosureAutoInferFromParamAnnotation(): void
@@ -792,7 +792,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The age field must be an integer.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testClosureAutoInferFromParamAnnotationPass(): void
@@ -807,7 +807,7 @@ final class ValidateMiddlewareTest extends TestCase
         $request = $this->makeCallableRequest($closure, '/closure-infer-pass', query: ['name' => 'Tom', 'age' => 18]);
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -822,7 +822,7 @@ final class ValidateMiddlewareTest extends TestCase
         $request = $this->makeCallableRequest($closure, '/closure-no-annotations', query: []);
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -841,7 +841,7 @@ final class ValidateMiddlewareTest extends TestCase
         $request = $this->makeCallableRequest($closure, '/closure-route-params', routeParams: ['id' => 7]);
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -862,7 +862,7 @@ final class ValidateMiddlewareTest extends TestCase
         $request = $this->makeCallableRequest($closure, '/closure-multi-pass', query: ['name' => 'Tom', 'age' => 18]);
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });
@@ -884,7 +884,7 @@ final class ValidateMiddlewareTest extends TestCase
 
         $this->expectException(ValidationException::class);
         $this->expectExceptionMessage('The age field is required.');
-        (new ValidateMiddleware())->process($request, fn () => 'ok');
+        (new Middleware())->process($request, fn () => 'ok');
     }
 
     public function testNoRouteSkipsValidation(): void
@@ -896,7 +896,7 @@ final class ValidateMiddlewareTest extends TestCase
         $request->route = null;
 
         $called = false;
-        (new ValidateMiddleware())->process($request, function () use (&$called) {
+        (new Middleware())->process($request, function () use (&$called) {
             $called = true;
             return 'ok';
         });

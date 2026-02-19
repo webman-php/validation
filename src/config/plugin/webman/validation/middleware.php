@@ -1,9 +1,9 @@
 <?php
 
-use Webman\Validation\Middleware\ValidateMiddleware;
+use Webman\Validation\Middleware;
 
 return [
     '@' => [
-        ValidateMiddleware::class,
+        Middleware::class,
     ],
 ];

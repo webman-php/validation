@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Webman\Validation\Middleware;
+namespace Webman\Validation;
 
 use Closure;
 use InvalidArgumentException;
@@ -12,11 +12,10 @@ use ReflectionNamedType;
 use ReflectionParameter;
 use ReflectionUnionType;
 use Webman\Http\Request;
-use Webman\Validation\Param;
-use Webman\Validation\Validate;
-use Webman\Validation\Validator;
+use Webman\Validation\Annotation\Param;
+use Webman\Validation\Annotation\Validate;
 
-final class ValidateMiddleware
+final class Middleware
 {
     private static array $metadataCache = [];
 
@@ -71,7 +70,7 @@ final class ValidateMiddleware
 
         foreach ($params as $item) {
             $name = $item['name'];
-            /** @var Param $config */
+            /** @var \Webman\Validation\Annotation\Param $config */
             $config = $item['config'];
 
             $value = $data[$name] ?? null;

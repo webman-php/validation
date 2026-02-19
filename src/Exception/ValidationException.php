@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Webman\Validation\Exceptions;
+namespace Webman\Validation\Exception;
 
 use Webman\Exception\BusinessException;
 

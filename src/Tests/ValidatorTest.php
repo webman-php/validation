@@ -6,7 +6,7 @@ namespace Webman\Validation\Tests;
 use PHPUnit\Framework\TestCase;
 use support\validation\Validator;
 use support\validation\ValidationException;
-use Webman\Validation\Exceptions\ValidationException as BaseValidationException;
+use Webman\Validation\Exception\ValidationException as BaseValidationException;
 
 final class ValidatorTest extends TestCase
 {

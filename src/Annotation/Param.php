@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Webman\Validation;
+namespace Webman\Validation\Annotation;
 
 use Attribute;
 
