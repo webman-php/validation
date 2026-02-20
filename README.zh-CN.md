@@ -206,6 +206,32 @@ class UserController
 }
 ```
 
+### 验证数据来源
+```php
+use support\validation\annotation\Validate;
+
+class UserController
+{
+    #[Validate(
+        rules: ['email' => 'required|email'],
+        in: ['query', 'body', 'path']
+    )]
+    public function send()
+    {
+        return json(['code' => 0, 'msg' => 'ok']);
+    }
+}
+```
+
+通过`in`参数来指定数据来源，其中：
+
+* **query** http请求的query参数，取自 `$request->get()`
+* **body** http请求的包体，取自 `$request->post()`
+* **path** http请求的路径参数，取自 `$request->route->param()`
+
+`in`可为字符串或数组；为数组时按顺序合并，后者覆盖前者。未传递`in`时默认等效于 `['query', 'body', 'path']`。
+
+
 ## 参数级验证（Param）
 
 ### 基本用法
@@ -224,6 +250,24 @@ class MailController
     }
 }
 ```
+
+### 验证数据来源
+
+类似的，参数级也支持`in`参数指定来源
+
+```php
+use support\validation\annotation\Param;
+
+class MailController
+{
+    public function send(
+        #[Param(rules: 'required|email', in: ['body'])] string $from
+    ) {
+        return json(['code' => 0, 'msg' => 'ok']);
+    }
+}
+```
+
 
 ### rules 支持字符串或数组
 

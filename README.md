@@ -205,6 +205,32 @@ class UserController
 }
 ```
 
+### Validation Data Source
+
+```php
+use support\validation\annotation\Validate;
+
+class UserController
+{
+    #[Validate(
+        rules: ['email' => 'required|email'],
+        in: ['query', 'body', 'path']
+    )]
+    public function send()
+    {
+        return json(['code' => 0, 'msg' => 'ok']);
+    }
+}
+```
+
+Use `in` to specify where validation data comes from:
+
+* **query** – HTTP query parameters from `$request->get()`
+* **body** – HTTP body from `$request->post()`
+* **path** – Path/route parameters from `$request->route->param()`
+
+`in` can be a string or array; when it's an array, values are merged in order and later sources override earlier ones. When `in` is omitted, it defaults to the equivalent of `['query', 'body', 'path']`.
+
 ## Parameter-Level Validation (Param)
 
 ### Basic Usage
@@ -218,6 +244,23 @@ class MailController
         #[Param(rules: 'required|email')] string $from,
         #[Param(rules: 'required|email')] string $to,
         #[Param(rules: 'required|string|min:1|max:500')] string $content
+    ) {
+        return json(['code' => 0, 'msg' => 'ok']);
+    }
+}
+```
+
+### Validation Data Source
+
+Parameter-level validation also supports the `in` parameter to specify data source:
+
+```php
+use support\validation\annotation\Param;
+
+class MailController
+{
+    public function send(
+        #[Param(rules: 'required|email', in: ['body'])] string $from
     ) {
         return json(['code' => 0, 'msg' => 'ok']);
     }

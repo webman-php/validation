@@ -195,6 +195,56 @@ final class ValidateMiddlewareTest extends TestCase
         $this->assertTrue($called);
     }
 
+    public function testValidateInWithValidatorQueryBodyOrderPass(): void
+    {
+        $request = $this->makeRequest(
+            controller: InWithValidatorQueryBodyController::class,
+            action: 'send',
+            query: ['id' => 1],
+            body: ['id' => 2]
+        );
+
+        $called = false;
+        (new Middleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testValidateInWithValidatorBodyQueryOrderFail(): void
+    {
+        $request = $this->makeRequest(
+            controller: InWithValidatorBodyQueryController::class,
+            action: 'send',
+            query: ['id' => 1],
+            body: ['id' => 2]
+        );
+
+        $this->expectException(ValidationException::class);
+        $this->expectExceptionMessage('ID invalid');
+        (new Middleware())->process($request, fn () => 'ok');
+    }
+
+    public function testValidateInWithValidatorPathPass(): void
+    {
+        $request = $this->makeRequest(
+            controller: InWithValidatorPathController::class,
+            action: 'send',
+            query: ['id' => 1],
+            routeParams: ['id' => 7]
+        );
+
+        $called = false;
+        (new Middleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
     public function testValidateInUnsupportedValueThrows(): void
     {
         $request = $this->makeRequest(
@@ -1139,6 +1189,48 @@ final class ParamInPathController
 final class InvalidInController
 {
     #[Validate(in: 'header', rules: ['id' => 'required|integer'])]
+    public function send(Request $request): void
+    {
+    }
+}
+
+final class InWithValidatorId2Validator extends Validator
+{
+    protected array $rules = [
+        'id' => 'required|integer|in:2',
+    ];
+
+    protected array $messages = [
+        'id.in' => 'ID invalid',
+    ];
+}
+
+final class InWithValidatorId7Validator extends Validator
+{
+    protected array $rules = [
+        'id' => 'required|integer|in:7',
+    ];
+}
+
+final class InWithValidatorQueryBodyController
+{
+    #[Validate(in: ['query', 'body'], validator: InWithValidatorId2Validator::class)]
+    public function send(Request $request): void
+    {
+    }
+}
+
+final class InWithValidatorBodyQueryController
+{
+    #[Validate(in: ['body', 'query'], validator: InWithValidatorId2Validator::class)]
+    public function send(Request $request): void
+    {
+    }
+}
+
+final class InWithValidatorPathController
+{
+    #[Validate(in: 'path', validator: InWithValidatorId7Validator::class)]
     public function send(Request $request): void
     {
     }
