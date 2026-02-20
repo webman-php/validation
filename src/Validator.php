@@ -52,7 +52,7 @@ class Validator
         return $clone;
     }
 
-    public function exception(string $exceptionClass): static
+    public function withException(string $exceptionClass): static
     {
         if ($exceptionClass === '') {
             throw new InvalidArgumentException('Validation exception must be a non-empty class string.');

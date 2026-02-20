@@ -26,10 +26,10 @@ final class Middleware
             return $handler($request);
         }
 
-        $data = $this->getRequestData($request);
+        $defaultData = $this->getRequestData($request);
 
-        $this->handleMethodValidation($metadata['methods'], $data);
-        $this->handleParamValidation($metadata['params'], $data);
+        $this->handleMethodValidation($request, $metadata['methods'], $defaultData);
+        $this->handleParamValidation($request, $metadata['params'], $defaultData);
 
         return $handler($request);
     }
@@ -46,18 +46,19 @@ final class Middleware
         return $this->getCallableMetadata($request);
     }
 
-    private function handleMethodValidation(array $methods, array $data): void
+    private function handleMethodValidation(Request $request, array $methods, array $defaultData): void
     {
         if ($methods === []) {
             return;
         }
 
         foreach ($methods as $config) {
+            $data = $this->resolveRequestData($request, $config->in, $defaultData);
             $this->validateMethod($config, $data);
         }
     }
 
-    private function handleParamValidation(array $params, array $data): void
+    private function handleParamValidation(Request $request, array $params, array $defaultData): void
     {
         if ($params === []) {
             return;
@@ -73,7 +74,8 @@ final class Middleware
             /** @var \Webman\Validation\Annotation\Param $config */
             $config = $item['config'];
 
-            $value = $data[$name] ?? null;
+            $dataForParam = $this->resolveRequestData($request, $config->in, $defaultData);
+            $value = $dataForParam[$name] ?? null;
             if ($value === null && $item['hasDefault']) {
                 $value = $item['default'];
             }
@@ -133,6 +135,40 @@ final class Middleware
             $routeParams = [];
         }
         return array_merge($request->all() ?: [], $routeParams);
+    }
+
+    private function resolveRequestData(Request $request, string|array|null $in, array $defaultData): array
+    {
+        if ($in === null || $in === []) {
+            return $defaultData;
+        }
+
+        $parts = is_array($in) ? $in : [$in];
+        $data = [];
+        foreach ($parts as $part) {
+            $data = array_merge($data, $this->getRequestPartData($request, $part));
+        }
+        return $data;
+    }
+
+    private function getRequestPartData(Request $request, mixed $part): array
+    {
+        if (!is_string($part) || $part === '') {
+            throw new InvalidArgumentException('Validate/Param in must be a non-empty string or string array.');
+        }
+
+        return match ($part) {
+            'query' => $request->get() ?: [],
+            'body' => $request->post() ?: [],
+            'path' => $this->getPathParams($request),
+            default => throw new InvalidArgumentException("Unsupported in value: {$part}. Only query|body|path are supported."),
+        };
+    }
+
+    private function getPathParams(Request $request): array
+    {
+        $routeParams = $request->route ? $request->route->param() : [];
+        return is_array($routeParams) ? $routeParams : [];
     }
 
     private function getMethodMetadata(string $controller, string $action): ?array
@@ -251,7 +287,8 @@ final class Middleware
                 return new Param(
                     rules: $completedRules,
                     messages: $config->messages,
-                    attribute: $config->attribute
+                    attribute: $config->attribute,
+                    in: $config->in
                 );
             }
 

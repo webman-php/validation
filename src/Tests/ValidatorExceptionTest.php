@@ -38,7 +38,7 @@ final class ValidatorExceptionTest extends TestCase
             ['name' => null],
             ['name' => 'required']
         )
-            ->exception(\RuntimeException::class)
+            ->withException(\RuntimeException::class)
             ->validate();
     }
 }

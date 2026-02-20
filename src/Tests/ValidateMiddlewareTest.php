@@ -123,6 +123,91 @@ final class ValidateMiddlewareTest extends TestCase
         $this->assertTrue($called);
     }
 
+    public function testValidateInQueryBodyBodyOverridesQueryByOrder(): void
+    {
+        $request = $this->makeRequest(
+            controller: InQueryBodyController::class,
+            action: 'send',
+            query: ['id' => 1],
+            body: ['id' => 2]
+        );
+
+        $called = false;
+        (new Middleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testValidateInBodyQueryQueryOverridesBodyByOrder(): void
+    {
+        $request = $this->makeRequest(
+            controller: InBodyQueryController::class,
+            action: 'send',
+            query: ['id' => 1],
+            body: ['id' => 2]
+        );
+
+        $called = false;
+        (new Middleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testValidateInQueryPathPathOverridesQueryByOrder(): void
+    {
+        $request = $this->makeRequest(
+            controller: InQueryPathController::class,
+            action: 'send',
+            query: ['id' => 1],
+            routeParams: ['id' => 7]
+        );
+
+        $called = false;
+        (new Middleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testParamInPathReadsFromPathOnly(): void
+    {
+        $request = $this->makeRequest(
+            controller: ParamInPathController::class,
+            action: 'send',
+            query: ['id' => 1],
+            routeParams: ['id' => 7]
+        );
+
+        $called = false;
+        (new Middleware())->process($request, function () use (&$called) {
+            $called = true;
+            return 'ok';
+        });
+
+        $this->assertTrue($called);
+    }
+
+    public function testValidateInUnsupportedValueThrows(): void
+    {
+        $request = $this->makeRequest(
+            controller: InvalidInController::class,
+            action: 'send',
+            query: ['id' => 1]
+        );
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Unsupported in value');
+        (new Middleware())->process($request, fn () => 'ok');
+    }
+
     public function testParamValidationUsesRouteParams(): void
     {
         $request = $this->makeRequest(
@@ -1013,6 +1098,47 @@ final class MethodMultipleController
 {
     #[Validate(rules: ['email' => 'required|email'])]
     #[Validate(rules: ['token' => 'required|string'])]
+    public function send(Request $request): void
+    {
+    }
+}
+
+final class InQueryBodyController
+{
+    #[Validate(in: ['query', 'body'], rules: ['id' => 'required|in:2'])]
+    public function send(Request $request): void
+    {
+    }
+}
+
+final class InBodyQueryController
+{
+    #[Validate(in: ['body', 'query'], rules: ['id' => 'required|in:1'])]
+    public function send(Request $request): void
+    {
+    }
+}
+
+final class InQueryPathController
+{
+    #[Validate(in: ['query', 'path'], rules: ['id' => 'required|in:7'])]
+    public function send(Request $request): void
+    {
+    }
+}
+
+final class ParamInPathController
+{
+    public function send(
+        #[Param(in: 'path', rules: 'required|in:7')]
+        int $id
+    ): void {
+    }
+}
+
+final class InvalidInController
+{
+    #[Validate(in: 'header', rules: ['id' => 'required|integer'])]
     public function send(Request $request): void
     {
     }
