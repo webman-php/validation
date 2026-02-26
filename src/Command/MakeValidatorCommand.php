@@ -631,11 +631,12 @@ final class MakeValidatorCommand extends Command
             $expected = $pluginDefaultPathResolver($plugin);
         }
 
-        if ($expected && $pathNorm) {
-            if (!$this->pathsEqual($expected, $pathNorm)) {
+        if ($plugin && $pathNorm) {
+            $pluginPrefix = 'plugin/' . $plugin . '/';
+            if (!str_starts_with(strtolower($pathNorm), strtolower($pluginPrefix))) {
                 $output->writeln($msg('plugin_path_conflict', [
-                    '{expected}' => $expected,
-                    '{actual}' => $pathNorm,
+                    '{plugin}' => $plugin,
+                    '{path}' => $pathNorm,
                 ]));
                 return null;
             }
